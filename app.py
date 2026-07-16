@@ -1,1 +1,39 @@
+import streamlit as st
+import time
+
+# ตั้งค่าหน้ากระดาษ
+st.set_page_config(page_title="iKid Secure", page_icon="🔐")
+
+# ใส่ CSS เพื่อตกแต่งพื้นหลังและปุ่ม
+st.markdown("""
+    <style>
+    .stApp { background-color: #F0F8F7; }
+    div.stButton > button { background-color: #005f73; color: white; width: 100%; }
+    </style>
+""", unsafe_allow_html=True)
+
+# หน้า Login
+def login_page():
+    st.title("🔐 iKid Secure")
+    st.subheader("ยินดีต้อนรับสู่ระบบติดตามพฤติกรรม")
+    
+    password = st.text_input("โปรดกรอกรหัสผ่านเพื่อเข้าใช้งาน", type="password")
+    
+    if st.button("เข้าสู่ระบบ"):
+        if password == "1234":  # รหัสผ่านที่ตั้งไว้
+            with st.spinner('กำลังตรวจสอบรหัสผ่านและเข้าสู่ระบบ...'):
+                time.sleep(3)  # หน่วงเวลา 3 วินาทีตามที่ไอด้าต้องการ
+                st.session_state.logged_in = True
+                st.rerun()
+        else:
+            st.error("รหัสผ่านไม่ถูกต้อง กรุณาติดต่อหัวหน้าวอร์ดเจ้า!")
+
+# เช็คสถานะการล็อกอิน
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+
+if st.session_state.logged_in:
+    st.switch_page("pages/1_Dashboard.py") # สั่งให้เด้งไปหน้าตาราง
+else:
+    login_page()
 
