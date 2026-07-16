@@ -1,6 +1,15 @@
 import streamlit as st
 import pandas as pd
 import time
+from supabase import create_client
+
+# เรียกคีย์มาจากไฟล์ secrets.toml
+url = st.secrets["SUPABASE_URL"]
+key = st.secrets["SUPABASE_KEY"]
+
+# เชื่อมต่อ Supabase
+supabase = create_client(url, key)
+
 
 st.set_page_config(layout="wide")
 
