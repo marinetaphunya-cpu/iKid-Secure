@@ -42,13 +42,12 @@ def login_page():
     password = st.text_input("โปรดกรอกรหัสผ่านเพื่อเข้าใช้งาน", type="password")
     
     if st.button("เข้าสู่ระบบ"):
-        if password == "1234":  # รหัสผ่านที่ตั้งไว้
-            with st.spinner('กำลังตรวจสอบรหัสผ่านและเข้าสู่ระบบ...'):
-                time.sleep(3)  # หน่วงเวลา 3 วินาทีตามที่ไอด้าต้องการ
-                st.session_state.logged_in = True
-                st.rerun()
-        else:
-            st.error("รหัสผ่านไม่ถูกต้อง กรุณาติดต่อหัวหน้าวอร์ดเจ้า!")
+        if password == "1234":
+            st.session_state["authenticated"] = True # ตั้งค่าตัวนี้
+            st.switch_page("pages/1_Dashboard.py") # สลับไปหน้า Dashboard
+
+if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
+    st.switch_page("app.py") # ถ้ายังไม่ Login ให้ดีดกลับทันที
 
 # เช็คสถานะการล็อกอิน
 if 'logged_in' not in st.session_state:
