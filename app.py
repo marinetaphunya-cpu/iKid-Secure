@@ -7,17 +7,26 @@ st.set_page_config(page_title="iKid Secure", page_icon="🔐")
 # ใส่ CSS เพื่อตกแต่งพื้นหลังและปุ่ม
 st.markdown("""
     <style>
-    .stApp { background-color: #F8F9FA !important; 
+    /* บังคับพื้นหลัง */
+    .stApp { 
+        background-color: #F8F9FA !important; 
     }
-    div.stButton > button { 
-        background-color: #0D6EFD;
-        color: #FFFFFF;
-        border: none;
-        border-radius: 5px; 
     
+    /* บังคับสีตัวหนังสือทั้งหมดให้อ่านง่าย */
+    h1, h2, h3, p, div, label { 
+        color: #212529 !important; 
+    }
+    
+    /* บังคับสีปุ่ม */
+    div.stButton > button { 
+        background-color: #0D6EFD !important; 
+        color: #FFFFFF !important; 
+        border: none !important;
+        border-radius: 5px !important;
     }
     </style>
 """, unsafe_allow_html=True)
+
 
 # หน้า Login
 def login_page():
