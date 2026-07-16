@@ -7,7 +7,8 @@ st.set_page_config(page_title="iKid Secure", page_icon="🔐")
 # ใส่ CSS เพื่อตกแต่งพื้นหลังและปุ่ม
 st.markdown("""
     <style>
-    .stApp { background-color: #F8F9FA; }
+    .stApp { background-color: #F8F9FA !important; 
+    }
     div.stButton > button { 
         background-color: #0D6EFD;
         color: #FFFFFF;
