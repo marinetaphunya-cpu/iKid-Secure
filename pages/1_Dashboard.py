@@ -27,6 +27,17 @@ st.markdown("""
 
 st.title("📋 รายชื่อ")
 
+<style>
+    /* จัดข้อมูลในตารางให้อยู่ตรงกลาง */
+    .stDataFrame {
+        text-align: center;
+    }
+    th, td {
+        text-align: center !important;
+    }
+</style>
+
+
 # ข้อมูลตัวอย่าง (ในอนาคตเราจะดึงจาก Supabase)
 data = {
     "name": ["A", "B", "C", "D", "E"],
@@ -35,6 +46,19 @@ data = {
     "หมายเหตุ": ["-", "-", "-", "-", "-"]
 }
 df = pd.DataFrame(data)
+
+st.data_editor(
+    df,
+    column_config={
+        "Code": st.column_config.TextColumn("Code", help="รหัสผู้ป่วย"),
+        "Aggression Level": st.column_config.NumberColumn(
+            "Aggression Level", 
+            format="%d" # จัดให้อยู่ในรูปแบบตัวเลข
+        ),
+    },
+    use_container_width=True
+)
+
 
 # โหมดแก้ไข
 if 'edit_mode' not in st.session_state:
