@@ -3,42 +3,45 @@ import pandas as pd
 import time
 from supabase import create_client
 
-# ถ้ายังไม่ได้ Login ให้เด้งกลับไปหน้าแรก (app.py)
+# 1. ตั้งค่าหน้าเพจ (ต้องอยู่บรรทัดแรกๆ)
+st.set_page_config(layout="wide", page_title="iKid Secure")
+
+# 2. เช็กสิทธิ์การ Login
 if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
     st.switch_page("app.py") 
 
-# เรียกคีย์มาจากไฟล์ secrets.toml
+# 3. เชื่อมต่อ Supabase
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
-
-# เชื่อมต่อ Supabase
 supabase = create_client(url, key)
 
-
-st.set_page_config(layout="wide")
-
-# CSS สำหรับตกแต่งตารางและปุ่มให้เป็นสี Pastel
+# 4. รวม CSS ตกแต่งทั้งหมดไว้ที่เดียว
 st.markdown("""
     <style>
-    .stDataFrame { border: 2px solid #A8DADC; border-radius: 10px; }
-    div.stButton > button { background-color: #F1FAEE; border: 1px solid #A8DADC; color: #1D3557; }
+    /* ตกแต่งตาราง */
+    .stDataFrame, .stDataEditor { 
+        border: 2px solid #A8DADC; 
+        border-radius: 10px; 
+        text-align: center;
+    }
+    /* บังคับตารางให้ตัวหนังสืออยู่กลาง */
+    div[data-testid="stDataFrame"] table {
+        margin-left: auto; margin-right: auto;
+    }
+    /* ตกแต่งปุ่ม */
+    div.stButton > button { 
+        background-color: #F1FAEE; 
+        border: 1px solid #A8DADC; 
+        color: #1D3557; 
+        font-weight: bold;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-st.title("📋 รายชื่อ")
+# 5. หัวข้อ
+st.title("📋 รายชื่อผู้ป่วย")
 
-<style>
-    /* จัดข้อมูลในตารางให้อยู่ตรงกลาง */
-    .stDataFrame {
-        text-align: center;
-    }
-    th, td {
-        text-align: center !important;
-    }
-</style>
-
-
-# ข้อมูลตัวอย่าง (ในอนาคตเราจะดึงจาก Supabase)
+# ข้อมูลตัวอย่าง
 data = {
     "name": ["A", "B", "C", "D", "E"],
     "Diagnosis": ["Depression", "ASD", "ASD", "ADHD", "ASD"],
@@ -47,43 +50,28 @@ data = {
 }
 df = pd.DataFrame(data)
 
-st.data_editor(
-    df,
-    column_config={
-        "Code": st.column_config.TextColumn("Code", help="รหัสผู้ป่วย"),
-        "Aggression Level": st.column_config.NumberColumn(
-            "Aggression Level", 
-            format="%d" # จัดให้อยู่ในรูปแบบตัวเลข
-        ),
-    },
-    use_container_width=True
-)
-
-
-# โหมดแก้ไข
+# 6. โหมดแก้ไข
 if 'edit_mode' not in st.session_state:
     st.session_state.edit_mode = False
 
-# ปุ่มแก้ไข/บันทึก
-col1, col2 = st.columns([8, 1])
+# ปุ่มควบคุม
+col1, col2 = st.columns([10, 1])
 with col2:
     if st.button("แก้ไข" if not st.session_state.edit_mode else "บันทึก"):
         if st.session_state.edit_mode:
-            with st.spinner('กำลังบันทึกข้อมูล...'):
-                time.sleep(2)
-                st.success("บันทึกเรียบร้อย!")
+            with st.spinner('กำลังบันทึก...'):
+                time.sleep(1) # จำลองการทำงาน
                 st.session_state.edit_mode = False
-                time.sleep(1)
                 st.rerun()
         else:
             st.session_state.edit_mode = True
             st.rerun()
 
-# แสดงตาราง
+# 7. แสดงผลข้อมูล
 if st.session_state.edit_mode:
+    st.write("โหมดแก้ไขข้อมูล:")
     edited_df = st.data_editor(df, use_container_width=True)
 else:
-    # แสดงตารางแบบคลิกเลือก Profile ได้
     st.dataframe(df, use_container_width=True, hide_index=True)
     st.info("💡 คลิกที่แถวข้อมูล เพื่อดูรายละเอียดรายบุคคล (ฟีเจอร์นี้กำลังพัฒนา)")
 
