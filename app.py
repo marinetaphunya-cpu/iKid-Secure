@@ -1,6 +1,12 @@
 import streamlit as st
 import time
 
+# ตอน Login ผ่าน
+if password == "1234":
+    st.session_state["authenticated"] = True # ตั้งค่าตัวนี้
+    st.switch_page("pages/1_Dashboard.py") # สลับไปหน้า Dashboard
+
+
 # ตั้งค่าหน้ากระดาษ
 st.set_page_config(page_title="iKid Secure", page_icon="🔐")
 
