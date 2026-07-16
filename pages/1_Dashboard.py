@@ -21,7 +21,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("📋 รายชื่อเด็กในความดูแล")
+st.title("📋 รายชื่อ")
 
 # ข้อมูลตัวอย่าง (ในอนาคตเราจะดึงจาก Supabase)
 data = {
@@ -40,11 +40,11 @@ if 'edit_mode' not in st.session_state:
 # ปุ่มแก้ไข/บันทึก
 col1, col2 = st.columns([8, 1])
 with col2:
-    if st.button("แก้ไข" if not st.session_state.edit_mode else "Save"):
+    if st.button("แก้ไข" if not st.session_state.edit_mode else "บันทึก"):
         if st.session_state.edit_mode:
             with st.spinner('กำลังบันทึกข้อมูล...'):
                 time.sleep(2)
-                st.success("บันทึกเรียบร้อยเจ้า!")
+                st.success("บันทึกเรียบร้อย!")
                 st.session_state.edit_mode = False
                 time.sleep(1)
                 st.rerun()
