@@ -25,8 +25,7 @@ st.title("📋 รายชื่อ")
 
 # ข้อมูลตัวอย่าง (ในอนาคตเราจะดึงจาก Supabase)
 data = {
-    "ลำดับ": [1, 2, 3, 4, 5],
-    "Code": ["A", "B", "C", "D", "E"],
+    "name": ["A", "B", "C", "D", "E"],
     "Diagnosis": ["Depression", "ASD", "ASD", "ADHD", "ASD"],
     "Aggression Level": [1, 2, 3, 1, 2],
     "หมายเหตุ": ["-", "-", "-", "-", "-"]
