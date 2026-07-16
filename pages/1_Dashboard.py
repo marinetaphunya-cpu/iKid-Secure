@@ -3,6 +3,10 @@ import pandas as pd
 import time
 from supabase import create_client
 
+# ถ้ายังไม่ได้ Login ให้เด้งกลับไปหน้าแรก (app.py)
+if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
+    st.switch_page("app.py") 
+
 # เรียกคีย์มาจากไฟล์ secrets.toml
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
