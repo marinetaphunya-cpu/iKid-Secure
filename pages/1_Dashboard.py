@@ -43,6 +43,7 @@ st.title("📋 รายชื่อผู้ป่วย")
 
 # ข้อมูลตัวอย่าง
 data = {
+    "ลำดับ": [1, 2, 3, 4, 5]
     "name": ["A", "B", "C", "D", "E"],
     "Diagnosis": ["Depression", "ASD", "ASD", "ADHD", "ASD"],
     "Aggression Level": [1, 2, 3, 1, 2],
