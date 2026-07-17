@@ -71,19 +71,25 @@ with col2:
             st.session_state.edit_mode = True
             st.rerun()
 
-# 7. แสดงผลข้อมูล
+# 7. แสดงผลและอัปเดตข้อมูล
 if st.session_state.edit_mode:
     st.write("โหมดแก้ไขข้อมูล:")
-    edited_df = st.data_editor(
+    # รับค่าที่ไอด้าพิมพ์ใหม่ใส่ตัวแปร edited_df
+    new_df = st.data_editor(
         df, 
         column_config=col_config,
         num_rows="dynamic", 
         use_container_width=True
     )
+    # อัปเดตตัวแปร df ให้เป็นค่าล่าสุดที่เพิ่งพิมพ์ไป
+    # ถ้าไอด้ากดปุ่ม "บันทึก" ข้อมูลตัวนี้จะถูกเซฟเก็บไว้เจ้า
+    df = new_df 
 else:
+    # แสดงผลข้อมูลที่อัปเดตล่าสุด
     st.dataframe(
         df, 
         column_config=col_config,
         use_container_width=True, 
         hide_index=True
     )
+
