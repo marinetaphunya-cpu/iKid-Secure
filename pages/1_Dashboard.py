@@ -41,13 +41,19 @@ data = {
 df = pd.DataFrame(data)
 
 # กำหนด Config ตาราง (ใช้ตัวนี้ตัวเดียวเพื่อความง่าย)
-col_config = {
+column_configuration = {
     "ลำดับ": st.column_config.NumberColumn("ลำดับ", width="small"),
     "name": st.column_config.TextColumn("ชื่อ", width="medium"),
     "Diagnosis": st.column_config.TextColumn("การวินิจฉัย", width="medium"),
     "Aggression Level": st.column_config.NumberColumn("ระดับความรุนแรง", format="%d"),
-    "หมายเหตุ": st.column_config.TextColumn("หมายเหตุ", width="large")
+    # แก้ตรงหมายเหตุเป็นแบบนี้เจ้า
+    "หมายเหตุ": st.column_config.TextColumn(
+        "หมายเหตุ", 
+        width="large",
+        default="" # บังคับให้มันเป็นช่องว่างเปล่าที่รอรับข้อความ
+    )
 }
+
 
 # 6. โหมดแก้ไข
 if 'edit_mode' not in st.session_state:
