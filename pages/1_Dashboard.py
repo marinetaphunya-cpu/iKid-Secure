@@ -45,7 +45,7 @@ data = {
     "name": ["A", "B", "C", "D", "E"],
     "Diagnosis": ["Depression", "ASD", "ASD", "ADHD", "ASD"],
     "Aggression Level": [1, 2, 3, 1, 2],
-    "หมายเหตุ": ["-", "-", "-", "-", "-"]
+    "หมายเหตุ": ["", "", "", "", ""]
 }
 df = pd.DataFrame(data)
 
@@ -55,7 +55,13 @@ column_configuration = {
     "name": st.column_config.TextColumn("ชื่อ", width="medium"),
     "Diagnosis": st.column_config.TextColumn("การวินิจฉัย", width="medium"),
     "Aggression Level": st.column_config.NumberColumn("ระดับความรุนแรง", format="%d"),
-    "หมายเหตุ": st.column_config.TextColumn("หมายเหตุ", width="large")
+    "หมายเหตุ": st.column_config.TextColumn(
+        "หมายเหตุ", 
+        width="large", 
+        default="" # ใส่ค่าเริ่มต้นเป็นช่องว่าง
+    )
+}
+
 }
 
 # 6. โหมดแก้ไข
