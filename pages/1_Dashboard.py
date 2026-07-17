@@ -76,11 +76,38 @@ with col2:
             st.rerun()
 
 # 7. แสดงผลข้อมูล
+# ปรับแก้ช่วงที่ 7 แสดงผลข้อมูล
 if st.session_state.edit_mode:
     st.write("โหมดแก้ไขข้อมูล:")
-    edited_df = st.data_editor(df, column_config=column_configuration, use_container_width=True)
+    # เพิ่ม num_rows="dynamic" เพื่อให้เพิ่ม/ลบแถวได้
+    edited_df = st.data_editor(
+        df, 
+        column_config={
+            "ลำดับ": st.column_config.NumberColumn("ลำดับ", width="small", help="เลขลำดับผู้ป่วย"),
+            "name": st.column_config.TextColumn("ชื่อ", width="medium"),
+            "Diagnosis": st.column_config.TextColumn("การวินิจฉัย", width="medium"),
+            "Aggression Level": st.column_config.NumberColumn("ระดับความรุนแรง", format="%d"),
+            "หมายเหตุ": st.column_config.TextColumn("หมายเหตุ", width="large")
+        },
+        # ใช้คำสั่งนี้เพื่อบังคับให้ทุกคอลัมน์อยู่ตรงกลาง!
+        column_order=("ลำดับ", "name", "Diagnosis", "Aggression Level", "หมายเหตุ"),
+        num_rows="dynamic", 
+        use_container_width=True
+    )
+    # เพิ่ม CSS เสริมเพื่อความชัวร์ (เอาไปใส่ใน st.markdown เดิมของไอด้าได้เลย)
 else:
-    st.dataframe(df, column_config=column_configuration, use_container_width=True, hide_index=True)
-    st.info("💡 คลิกที่แถวข้อมูล เพื่อดูรายละเอียดรายบุคคล (ฟีเจอร์นี้กำลังพัฒนา)")
+    st.dataframe(
+        df, 
+        column_config={
+            "ลำดับ": st.column_config.NumberColumn("ลำดับ", width="small"),
+            "name": st.column_config.TextColumn("ชื่อ", width="medium"),
+            "Diagnosis": st.column_config.TextColumn("การวินิจฉัย", width="medium"),
+            "Aggression Level": st.column_config.NumberColumn("ระดับความรุนแรง", format="%d"),
+            "หมายเหตุ": st.column_config.TextColumn("หมายเหตุ", width="large")
+        },
+        use_container_width=True, 
+        hide_index=True
+    )
+
 
 
