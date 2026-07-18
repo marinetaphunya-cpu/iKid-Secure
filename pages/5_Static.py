@@ -47,7 +47,7 @@ try:
         st.dataframe(display_df, use_container_width=True)
 
     else:
-        st.info("ยังไม่มีข้อมูลในระบบเจ้า")
+        st.info("ยังไม่มีข้อมูลในระบบ")
 
 except Exception as e:
     st.error(f"เกิดข้อผิดพลาด: {e}")
