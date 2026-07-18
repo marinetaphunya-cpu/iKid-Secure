@@ -24,50 +24,33 @@ if not patient_id:
 patient_res = supabase.table("patients").select("*").eq("id", patient_id).execute()
 patient = patient_res.data[0] if patient_res.data else {}
 
-# ดึงข้อมูลประวัติ (เรียงตามวันที่ใหม่ล่าสุดขึ้นก่อน)
+# ดึงข้อมูลประวัติ
 assess_res = supabase.table("assessments").select("*").eq("patient_id", patient_id).order("created_at", desc=True).execute()
 df = pd.DataFrame(assess_res.data)
 
-# 3. ส่วนหัว
 st.title(f"👤 ประวัติการรักษา: {patient.get('name', 'ไม่ระบุชื่อ')}")
 st.markdown("---")
 
-# 4. สรุปข้อมูลล่าสุด
-st.subheader("📊 สรุปข้อมูลล่าสุด")
+# 3. แสดงผล (ถ้า df ไม่ว่าง)
 if not df.empty:
+    st.subheader("📊 สรุปข้อมูลล่าสุด")
     latest = df.iloc[0]
     c1, c2, c3 = st.columns(3)
-    c1.metric("จำนวนครั้ง (Incident)", latest.get('incident_count', 0))
+    c1.metric("จำนวนครั้ง", latest.get('incident_count', 0))
     c2.metric("ระดับความรุนแรง", latest.get('aggression_level', '-'))
     c3.metric("พฤติกรรมล่าสุด", latest.get('behavior_note', '-'))
-else:
-    st.info("✨ ยังไม่มีข้อมูลประวัติการประเมินในระบบ")
 
 st.divider()
-
-# 5. ประวัติย้อนหลัง
 st.subheader("📜 ประวัติย้อนหลัง")
 
-if not df.empty:
-    df_display = df.copy()
-    def format_date_to_th(date_str):
-        try:
-            dt = pd.to_datetime(date_str)
-            return dt.strftime(f'%d/%m/{dt.year + 543}')
-        except:
-            return date_str
-    df_display['created_at'] = df_display['created_at'].apply(format_date_to_th)
-else:
-    df_display = pd.DataFrame(columns=['created_at', 'incident_count', 'aggression_level', 'behavior_note'])
-
-# ตรวจสอบว่ามีคีย์นี้หรือยัง ถ้าไม่มีให้สร้างค่าเริ่มต้นเป็น False
 if "edit_mode" not in st.session_state:
     st.session_state.edit_mode = False
 
-# แก้ไขตรงนี้เจ้า: ใช้ st.session_state.edit_mode แทน st.edit_mode
 if not st.session_state.edit_mode:
-    if not df_display.empty:
-        st.dataframe(df_display.drop(columns=['id', 'patient_id'], errors='ignore'), use_container_width=True)
+    if not df.empty:
+        # แสดงแบบอ่านอย่างเดียว
+        df_display = df.drop(columns=['patient_id'], errors='ignore')
+        st.dataframe(df_display, use_container_width=True)
     else:
         st.write("ยังไม่มีประวัติการประเมินในระบบ")
     
@@ -75,50 +58,49 @@ if not st.session_state.edit_mode:
         st.session_state.edit_mode = True
         st.rerun()
 else:
-    st.info("💡 คำแนะนำ: พิมพ์วันที่ในรูปแบบ DD/MM/2569")
+    # โหมดแก้ไข: ต้องโชว์ id ด้วยเพื่อให้ระบบลบถูกแถว
     edited_df = st.data_editor(
-        df_display.drop(columns=['id', 'patient_id'], errors='ignore'), 
+        df, 
         use_container_width=True, 
-        num_rows="dynamic"
+        num_rows="dynamic",
+        column_config={"id": None} # ซ่อนคอลัมน์ id ไม่ให้ user เห็น แต่ยังมีค่าอยู่ข้างหลัง
     )
     
     col_b1, col_b2 = st.columns([1, 5])
     if col_b1.button("💾 บันทึก"):
         try:
-            def convert_date_to_db(date_str):
-                try:
-                    day, month, year_be = str(date_str).split('/')
-                    return f"{int(year_be) - 543}-{month}-{day}"
-                except:
-                    return datetime.now().strftime('%Y-%m-%d')
+            # 1. จัดการลบแถวที่หายไป (ถ้าใน db มี แต่ใน editor ไม่มี = ต้องลบ)
+            original_ids = df['id'].tolist()
+            current_ids = edited_df['id'].dropna().tolist()
+            ids_to_delete = [i for i in original_ids if i not in current_ids]
+            
+            for del_id in ids_to_delete:
+                supabase.table("assessments").delete().eq("id", del_id).execute()
 
-            edited_df['created_at'] = edited_df['created_at'].apply(convert_date_to_db)
+            # 2. Update หรือ Insert ข้อมูลใหม่
             records = edited_df.to_dict(orient='records')
             for r in records:
                 r['patient_id'] = patient_id
+                if 'id' in r and pd.isna(r['id']): del r['id']
+                
                 if 'id' in r and r['id']:
                     supabase.table("assessments").update(r).eq("id", r['id']).execute()
                 else:
                     supabase.table("assessments").insert(r).execute()
             
             st.session_state.edit_mode = False
-            st.success("✅ บันทึกเรียบร้อยเจ้า!")
+            st.success("✅ บันทึกและอัปเดตเรียบร้อยเจ้า!")
             st.rerun()
         except Exception as e:
             st.error(f"❌ บันทึกพลาด: {e}")
+    
     if col_b2.button("❌ ยกเลิก"):
         st.session_state.edit_mode = False
         st.rerun()
 
-# 6. ปุ่มนำทาง
 st.divider()
-if st.button("🚀 แบบประเมิน (Evaluation)", use_container_width=True):
-    st.session_state["target_patient_id"] = patient_id
+if st.button("🚀 ไปหน้าประเมิน", use_container_width=True):
     st.switch_page("pages/3_Evaluation.py")
-
-if st.button("⬅️ กลับหน้ารายชื่อ", use_container_width=True):
-    st.session_state.edit_mode = False
-    st.switch_page("pages/1_Dashboard.py")
 
 
 
