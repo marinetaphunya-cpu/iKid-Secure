@@ -15,7 +15,7 @@ supabase = init_supabase()
 # 2. เช็ก ID และดึงข้อมูล
 patient_id = st.session_state.get("target_patient_id")
 if not patient_id:
-    st.warning("⚠️ ยังไม่ได้เลือกผู้ป่วยเจ้า กลับไปเลือกที่หน้า Dashboard นะเจ้า")
+    st.warning("⚠️ ยังไม่ได้เลือกรายชื่อ")
     if st.button("⬅️ กลับไปหน้ารายชื่อ"):
         st.switch_page("pages/1_Dashboard.py")
     st.stop()
@@ -38,7 +38,7 @@ if not df.empty:
     c2.metric("ระดับความรุนแรง", latest.get('aggression_level', '-'))
     c3.metric("พฤติกรรมล่าสุด", latest.get('behavior_note', '-'))
 else:
-    st.info("✨ ยังไม่มีข้อมูลประวัติการประเมินในระบบเจ้า")
+    st.info("✨ ยังไม่มีข้อมูลประวัติการประเมินในระบบ")
 
 st.divider()
 
@@ -82,7 +82,7 @@ else:
             records = edited_df.to_dict(orient='records')
             supabase.table("assessments").upsert(records).execute()
             st.session_state.edit_mode = False
-            st.success("✅ บันทึกเรียบร้อยเจ้า!")
+            st.success("✅ บันทึกเรียบร้อย!")
             st.rerun()
         except Exception as e:
             st.error(f"❌ บันทึกพลาด: {e}")
@@ -92,7 +92,7 @@ else:
 
 # 5. ปุ่มนำทาง (อยู่ล่างสุด เด่นชัด)
 st.divider()
-if st.button("🚀 แบบประเมินใหม่ (Evaluation)", use_container_width=True):
+if st.button("🚀 แบบประเมิน (Evaluation)", use_container_width=True):
     st.session_state["target_patient_id"] = patient_id
     st.switch_page("pages/3_Evaluation.py")
 
