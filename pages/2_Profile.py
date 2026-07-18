@@ -10,44 +10,53 @@ def init_supabase():
 
 supabase = init_supabase()
 
-patient_id = st.session_state.get("target_patient_id")
-if not patient_id:
-    st.error("ไม่พบข้อมูลผู้ป่วย")
-    st.stop()
-
 # 1. ดึงข้อมูล
+patient_id = st.session_state.get("target_patient_id")
 patient = supabase.table("patients").select("*").eq("id", patient_id).execute().data[0]
-assess_res = supabase.table("assessments").select("*").eq("patient_id", patient_id).execute()
-assessments_df = pd.DataFrame(assess_res.data)
+assess_res = supabase.table("assessments").select("*").eq("patient_id", patient_id).order("created_at", desc=True).execute()
+df = pd.DataFrame(assess_res.data)
 
-st.title(f"📋 ประวัติ: {patient.get('name')}")
+# 2. หัวข้อใหญ่
+st.title(f"👤 ประวัติของ: {patient.get('name')}")
 
-# 2. ส่วนแก้ไข (อันนี้แหละที่ทำให้อ่านอย่างเดียวกลายเป็นแก้ไขได้)
-st.subheader("แก้ไข")
+# 3. โชว์ส่วน Summary (ในแอก/หน้าแรกของโปรไฟล์)
+st.subheader("📊 สรุปข้อมูลล่าสุด")
+if not df.empty:
+    latest = df.iloc[0]
+    col1, col2, col3 = st.columns(3)
+    col1.metric("จำนวนเหตุการณ์ (Incidents)", latest.get('incident_count', 0))
+    col2.metric("ระดับความรุนแรง (Aggression)", latest.get('aggression_level', 0))
+    col3.write(f"**บันทึกพฤติกรรมล่าสุด:** {latest.get('behavior_note', '-')}")
+else:
+    st.warning("ยังไม่มีข้อมูลประวัติล่าสุดเจ้า")
 
-if not assessments_df.empty:
-    # st.data_editor คือหัวใจสำคัญเจ้า!
+st.divider()
+
+# 4. ประวัติย้อนหลัง (แก้ไขได้)
+st.subheader("📜 ประวัติย้อนหลัง (แก้ไขได้)")
+if not df.empty:
     edited_df = st.data_editor(
-        assessments_df,
-        column_config={
-            "id": None, # ซ่อน ID ไม่ให้ใครกดแก้
-            "patient_id": None # ซ่อน ID คนไข้
-        },
+        df,
+        column_config={"id": None, "patient_id": None},
         use_container_width=True
     )
-
-    # 3. ปุ่มบันทึก
-    if st.button("บันทึกข้อมูล"):
+    
+    if st.button("💾 บันทึกการแก้ไข"):
         try:
-            # แปลง DF ที่แก้แล้วกลับเป็น list
             records = edited_df.to_dict(orient='records')
             supabase.table("assessments").upsert(records).execute()
-            st.success("บันทึกข้อมูลย้อนหลังเรียบร้อยแล้วเจ้า!")
+            st.success("บันทึกเรียบร้อยเจ้า!")
             st.rerun()
         except Exception as e:
-            st.error(f"บันทึกไม่ได้: {e}")
+            st.error(f"เกิดข้อผิดพลาด: {e}")
 else:
-    st.info("ยังไม่มีข้อมูลประวัติ")
+    st.info("ยังไม่มีข้อมูลประวัติย้อนหลัง")
 
-if st.button("กลับ"):
+# 5. ปุ่มนำทาง
+if st.button("➕ ไปหน้าประเมินใหม่"):
+    st.session_state["target_patient_id"] = patient_id
+    st.switch_page("pages/3_Evaluation.py")
+
+if st.button("⬅️ กลับไปหน้ารายชื่อ"):
     st.switch_page("pages/1_Dashboard.py")
+
