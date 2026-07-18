@@ -12,6 +12,11 @@ supabase = init_supabase()
 
 # 1. ดึง ID จาก Query Params
 patient_id = st.query_params.get("patient_id")
+# 1. รับ ID จาก Query Params
+patient_id = st.query_params.get("patient_id")
+
+st.write(f"DEBUG: patient_id คือ {patient_id}") 
+
 if not patient_id:
     st.error("ไม่พบข้อมูลผู้ป่วย")
     if st.button("กลับ"): st.switch_page("pages/1_Dashboard.py")
