@@ -55,8 +55,16 @@ if st.session_state.get('edit_mode', False):
         )
         
         # ปุ่มบันทึกต้องอยู่ใน Form ถึงจะไม่รีเซ็ตค่า
-        if st.form_submit_button("บันทึกข้อมูล"):
+                if st.form_submit_button("บันทึกข้อมูล"):
             try:
+                # --- เพิ่มตรงนี้เพื่อแปลงให้เป็นเลขจำนวนเต็มก่อนบันทึก ---
+                # ระบุชื่อคอลัมน์ที่เป็นตัวเลขของไอด้า (เช่น id และ aggression_level)
+                cols_to_fix = ['id', 'aggression_level'] 
+                for col in cols_to_fix:
+                    if col in new_df.columns:
+                        new_df[col] = pd.to_numeric(new_df[col], errors='coerce').fillna(0).astype(int)
+                # ----------------------------------------------------
+
                 # บันทึกลง Supabase
                 data_to_save = new_df.to_dict(orient='records')
                 supabase.table("patients").upsert(data_to_save).execute()
@@ -65,9 +73,10 @@ if st.session_state.get('edit_mode', False):
                 st.session_state.patient_df = new_df
                 st.success("บันทึกข้อมูลเรียบร้อย!")
                 st.session_state.edit_mode = False
-                st.rerun() # รีเฟรชหน้าจอหลังจากบันทึกเสร็จ
+                st.rerun() 
             except Exception as e:
                 st.error(f"บันทึกพลาด: {e}")
+
 else:
     # โหมดแสดงผลปกติ
     st.dataframe(st.session_state.patient_df, column_order=("id", "name", "diagnosis", "aggression_level", "หมายเหตุ"), use_container_width=True)
