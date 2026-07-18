@@ -44,7 +44,7 @@ else:
 # 5. & 6. แก้ไขและบันทึกข้อมูลแบบใช้ Form
 if st.session_state.get('edit_mode', False):
     with st.form("edit_form"):
-        st.info("แก้ไขข้อมูลเสร็จแล้วอย่าลืมกดปุ่มบันทึกด้านล่างนะเจ้า")
+        st.info("แก้ไขข้อมูลเสร็จแล้วอย่าลืมกดปุ่มบันทึกด้านล่าง")
         
         # ตัวแก้ไขข้อมูล
         new_df = st.data_editor(
@@ -55,12 +55,17 @@ if st.session_state.get('edit_mode', False):
         )
         
         # ปุ่มบันทึก (แก้การย่อหน้าให้ตรงกับ with st.form)
+                # ปุ่มบันทึก
         if st.form_submit_button("บันทึกข้อมูล"):
             try:
-                # แปลงคอลัมน์ที่เป็นตัวเลขให้เป็น int ก่อนบันทึก
+                # 1. เปลี่ยนค่า NaN (ช่องว่าง) ให้กลายเป็น None (เพื่อให้เป็นค่าว่างที่ Supabase ยอมรับ)
+                new_df = new_df.where(pd.notnull(new_df), None)
+                
+                # 2. แปลงคอลัมน์ตัวเลข
                 cols_to_fix = ['id', 'aggression_level'] 
                 for col in cols_to_fix:
                     if col in new_df.columns:
+                        # ใช้ errors='coerce' เพื่อเปลี่ยนค่าที่ว่างให้เป็น 0 แทนที่จะเป็น NaN
                         new_df[col] = pd.to_numeric(new_df[col], errors='coerce').fillna(0).astype(int)
 
                 # บันทึกลง Supabase
@@ -74,6 +79,7 @@ if st.session_state.get('edit_mode', False):
                 st.rerun() 
             except Exception as e:
                 st.error(f"บันทึกพลาด: {e}")
+
 
 else:
     # โหมดแสดงผลปกติ
