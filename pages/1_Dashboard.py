@@ -25,7 +25,7 @@ def get_data_from_db():
         st.error(f"เกิดปัญหาในการดึงข้อมูล: {e}")
         return pd.DataFrame()
 
-# กำหนดข้อมูลเริ่มต้นใน session_state
+# กำหนดข้อมูลเริ่มต้น
 if "patient_df" not in st.session_state:
     st.session_state.patient_df = get_data_from_db()
 
@@ -41,12 +41,11 @@ if not st.session_state.patient_df.empty:
 else:
     st.write("กำลังโหลดข้อมูล...")
 
-# 5. & 6. แก้ไขและบันทึกข้อมูลแบบใช้ Form
+# 5. & 6. แก้ไขและบันทึก
 if st.session_state.get('edit_mode', False):
     with st.form("edit_form"):
         st.info("แก้ไขข้อมูลเสร็จแล้วอย่าลืมกดปุ่มบันทึกด้านล่าง")
         
-        # ตัวแก้ไขข้อมูล
         new_df = st.data_editor(
             st.session_state.patient_df,
             column_order=("id", "name", "diagnosis", "aggression_level", "หมายเหตุ"),
@@ -54,29 +53,23 @@ if st.session_state.get('edit_mode', False):
             use_container_width=True
         )
         
-        # ปุ่มบันทึก (แก้การย่อหน้าให้ตรงกับ with st.form)
-                # ปุ่มบันทึก
-                if st.form_submit_button("บันทึกข้อมูล"):
+        # ปุ่มบันทึก (จัดให้ตรงกับบรรทัด if form_submit_button)
+        if st.form_submit_button("บันทึกข้อมูล"):
             try:
-                # 1. จัดการค่า None/NaN ให้หมดทั้งตารางก่อนเลยเจ้า
-                # สิ่งนี้จะเปลี่ยนช่องว่างทุกอย่างให้เป็น None ที่เป็นค่าว่างจริงๆ
+                # ทำความสะอาดข้อมูล
                 clean_df = new_df.where(pd.notnull(new_df), None)
                 
-                # 2. ทำการแปลงเฉพาะคอลัมน์ที่เป็นตัวเลข
-                # เราจะแปลงจาก clean_df ที่สะอาดแล้วเจ้า
+                # แปลงคอลัมน์ตัวเลข
                 cols_to_fix = ['id', 'aggression_level'] 
                 for col in cols_to_fix:
                     if col in clean_df.columns:
-                        # แปลงเป็นตัวเลข ถ้าช่องไหนว่างให้เป็น 0
                         clean_df[col] = pd.to_numeric(clean_df[col], errors='coerce').fillna(0).astype(int)
 
-                # 3. แปลงเป็น dict เพื่อส่งให้ Supabase (สะอาดแน่นอนเจ้า)
-                data_to_save = clean_df.to_dict(orient='records')
-                
                 # บันทึกลง Supabase
+                data_to_save = clean_df.to_dict(orient='records')
                 supabase.table("patients").upsert(data_to_save).execute()
                 
-                # อัปเดต state
+                # อัปเดต
                 st.session_state.patient_df = clean_df
                 st.success("บันทึกข้อมูลเรียบร้อย!")
                 st.session_state.edit_mode = False
@@ -84,15 +77,11 @@ if st.session_state.get('edit_mode', False):
             except Exception as e:
                 st.error(f"บันทึกพลาด: {e}")
 
-
-
 else:
-    # โหมดแสดงผลปกติ
     st.dataframe(st.session_state.patient_df, column_order=("id", "name", "diagnosis", "aggression_level", "หมายเหตุ"), use_container_width=True)
     
     if st.button("แก้ไข"):
         st.session_state.edit_mode = True
         st.rerun()
-
 
 
