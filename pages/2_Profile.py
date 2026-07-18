@@ -10,6 +10,7 @@ def init_supabase():
 
 supabase = init_supabase()
 
+# 1. ดึงข้อมูล
 patient_id = st.session_state.get("target_patient_id")
 patient = supabase.table("patients").select("*").eq("id", patient_id).execute().data[0]
 assess_res = supabase.table("assessments").select("*").eq("patient_id", patient_id).order("created_at", desc=True).execute()
@@ -17,7 +18,7 @@ df = pd.DataFrame(assess_res.data)
 
 st.title(f"👤 ประวัติ: {patient.get('name')}")
 
-# โซนสรุป
+# 2. โซนสรุป
 st.subheader("📊 สรุปข้อมูลล่าสุด")
 if not df.empty:
     latest = df.iloc[0]
@@ -30,22 +31,11 @@ else:
 
 st.divider()
 
-# ปุ่มนำทางไปประเมิน (วางไว้ตรงกลางโดดๆ)
-st.write("###") # เว้นบรรทัด
-col_c1, col_c2, col_c3 = st.columns([1, 2, 1]) # แบ่ง 3 ส่วน เอาไว้ตรงกลาง
-with col_c2:
-    if st.button("🚀 แบบประเมิน (Evaluation)", use_container_width=True):
-        st.session_state["target_patient_id"] = patient_id
-        st.switch_page("pages/3_Evaluation.py")
-st.write("###")
-
-st.divider()
-
-# โซนประวัติย้อนหลัง + ปุ่มชิดซ้าย
+# 3. โซนประวัติย้อนหลัง (ปุ่มแก้ไขอยู่ซ้าย)
+st.subheader("📜 ประวัติย้อนหลัง")
 if "edit_mode" not in st.session_state:
     st.session_state.edit_mode = False
 
-st.subheader("📜 ประวัติย้อนหลัง")
 if not df.empty:
     if not st.session_state.edit_mode:
         st.dataframe(df.drop(columns=['id', 'patient_id'], errors='ignore'), use_container_width=True)
@@ -54,8 +44,8 @@ if not df.empty:
             st.rerun()
     else:
         edited_df = st.data_editor(df, column_config={"id": None, "patient_id": None}, use_container_width=True)
-        col_b1, col_b2 = st.columns(2)
-        if col_b1.button("💾 บันทึกข้อมูล"):
+        col_b1, col_b2 = st.columns([1, 5]) # ชิดซ้าย
+        if col_b1.button("💾 บันทึก"):
             records = edited_df.to_dict(orient='records')
             supabase.table("assessments").upsert(records).execute()
             st.session_state.edit_mode = False
@@ -64,7 +54,17 @@ if not df.empty:
             st.session_state.edit_mode = False
             st.rerun()
 
-# ปุ่มกลับชิดซ้าย
-if st.button("⬅️ กลับหน้ารายชื่อ"):
-    st.session_state.edit_mode = False
-    st.switch_page("pages/1_Dashboard.py")
+# 4. ปุ่มล่างสุด (กลับชิดซ้าย / ประเมินใหม่ตรงกลาง)
+st.divider()
+col_nav1, col_nav2, col_nav3 = st.columns([1, 2, 1]) # แบ่ง 3 ช่อง
+
+with col_nav1:
+    if st.button("⬅️ กลับหน้ารายชื่อ"):
+        st.session_state.edit_mode = False
+        st.switch_page("pages/1_Dashboard.py")
+
+with col_nav2:
+    # ปุ่มประเมินอยู่ช่องกลาง (ช่องที่ 2)
+    if st.button("🚀 แบบประเมิน (Evaluation)", use_container_width=True):
+        st.session_state["target_patient_id"] = patient_id
+        st.switch_page("pages/3_Evaluation.py")
