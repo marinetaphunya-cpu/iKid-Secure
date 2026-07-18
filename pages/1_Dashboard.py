@@ -37,13 +37,14 @@ st.markdown("""<style>
 
 st.title("📋 รายชื่อผู้ป่วย")
 
+# แก้ชื่อให้ตรงกับ Supabase 100%
 column_configuration = {
-    "ลำดับ": st.column_config.NumberColumn("ลำดับ", width="small"),
+    "id": st.column_config.NumberColumn("ลำดับ", width="small"),
     "name": st.column_config.TextColumn("ชื่อ", width="medium"),
-    "Diagnosis": st.column_config.TextColumn("การวินิจฉัย", width="medium"),
-    "Aggression Level": st.column_config.NumberColumn("ระดับความรุนแรง", format="%d"),
+    "aggression_level": st.column_config.NumberColumn("ระดับความรุนแรง", format="%d"),
     "หมายเหตุ": st.column_config.TextColumn("หมายเหตุ", width="large")
 }
+
 
 # โหมดแก้ไข
 if 'edit_mode' not in st.session_state:
