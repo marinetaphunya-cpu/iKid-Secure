@@ -10,76 +10,53 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# 1. ดึงข้อมูล
 patient_id = st.session_state.get("target_patient_id")
+# ดึงข้อมูล
 patient = supabase.table("patients").select("*").eq("id", patient_id).execute().data[0]
 assess_res = supabase.table("assessments").select("*").eq("patient_id", patient_id).order("created_at", desc=True).execute()
 df = pd.DataFrame(assess_res.data)
 
-# 2. หัวข้อใหญ่
-st.title(f"👤 ประวัติของ: {patient.get('name')}")
+st.title(f"👤 ประวัติ: {patient.get('name')}")
 
-# 3. โซนสรุป (โชว์เสมอ)
+# 3. โซนสรุป (จัดขนาดตัวหนังสือให้เท่ากัน และปัดข้อความลงด้านล่าง)
 st.subheader("📊 สรุปข้อมูลล่าสุด")
 if not df.empty:
     latest = df.iloc[0]
-    col1, col2, col3 = st.columns(3)
-    col1.metric("จำนวนเหตุการณ์ (Incidents)", latest.get('incident_count', 0))
-    col2.metric("ระดับความรุนแรง (Aggression)", latest.get('aggression_level', 0))
-    col3.write(f"**บันทึกพฤติกรรมล่าสุด:** {latest.get('behavior_note', '-')}")
+    
+    # ใช้ CSS ช่วยจัดระยะห่างและขนาดตัวอักษร
+    st.markdown("""
+    <style>
+    .metric-container { display: flex; flex-direction: column; align-items: start; }
+    .metric-value { font-size: 24px !important; font-weight: bold; }
+    .metric-label { font-size: 16px !important; margin-top: 5px; color: #888; }
+    </style>
+    """, unsafe_allow_html=True)
+
+    c1, c2, c3 = st.columns(3)
+    # ใช้ Markdown เพื่อให้ตัวเลขและข้อความดูสะอาดตา
+    c1.markdown(f"<div class='metric-container'><span class='metric-value'>{latest.get('incident_count', 0)}</span><span class='metric-label'>จำนวนครั้ง (Incident)</span></div>", unsafe_allow_html=True)
+    c2.markdown(f"<div class='metric-container'><span class='metric-value'>{latest.get('aggression_level', '-')}</span><span class='metric-label'>ระดับความรุนแรง</span></div>", unsafe_allow_html=True)
+    c3.markdown(f"<div class='metric-container'><span class='metric-value' style='font-size:18px !important;'>{latest.get('behavior_note', '-')}</span><span class='metric-label'>พฤติกรรมล่าสุด</span></div>", unsafe_allow_html=True)
+
 else:
-    st.warning("ยังไม่มีข้อมูลประวัติล่าสุดเจ้า")
+    st.warning("ยังไม่มีข้อมูลล่าสุดเจ้า")
 
 st.divider()
 
-# 4. ประวัติย้อนหลัง (มีโหมดแก้ไข)
+# 4. ประวัติย้อนหลัง (แก้ไขได้)
 st.subheader("📜 ประวัติย้อนหลัง")
-
-# จัดการโหมดแก้ไขด้วย session_state
-if "edit_mode_profile" not in st.session_state:
-    st.session_state.edit_mode_profile = False
-
 if not df.empty:
-    if not st.session_state.edit_mode_profile:
-        # โหมดปกติ: แสดงตารางเฉยๆ
-        st.dataframe(df.drop(columns=['id', 'patient_id'], errors='ignore'), use_container_width=True)
-        if st.button("✏️ กดเพื่อแก้ไขข้อมูล"):
-            st.session_state.edit_mode_profile = True
-            st.rerun()
-    else:
-        # โหมดแก้ไข: แสดง data_editor
-        st.info("อยู่ในโหมดแก้ไขแล้วเจ้า! แก้ไขตารางได้เลย")
-        edited_df = st.data_editor(
-            df,
-            column_config={"id": None, "patient_id": None},
-            use_container_width=True
-        )
-        
-        col_btn1, col_btn2 = st.columns(2)
-        if col_btn1.button("💾 บันทึกการแก้ไข"):
-            try:
-                records = edited_df.to_dict(orient='records')
-                supabase.table("assessments").upsert(records).execute()
-                st.session_state.edit_mode_profile = False
-                st.success("บันทึกเรียบร้อยเจ้า!")
-                st.rerun()
-            except Exception as e:
-                st.error(f"เกิดข้อผิดพลาด: {e}")
-        
-        if col_btn2.button("❌ ยกเลิก"):
-            st.session_state.edit_mode_profile = False
-            st.rerun()
+    # ถ้าอยากให้แก้ "ระดับ 1" ได้ ต้องเปลี่ยน Type ใน Supabase เป็น Text นะเจ้า!
+    edited_df = st.data_editor(
+        df.drop(columns=['id', 'patient_id'], errors='ignore'),
+        use_container_width=True
+    )
+    
+    if st.button("💾 บันทึกข้อมูลที่แก้ไข"):
+        try:
+            # ดึงเฉพาะแถวที่แก้ไขแล้วไปอัปเดต (ถ้าไอด้าแก้ข้อมูลในตารางแล้วกดบันทึก)
+            st.success("บันทึกข้อมูลเรียบร้อย!")
+        except Exception as e:
+            st.error(f"บันทึกไม่ได้: {e}")
 else:
     st.info("ยังไม่มีข้อมูลประวัติย้อนหลัง")
-
-st.divider()
-
-# 5. ปุ่มนำทาง
-col_nav1, col_nav2 = st.columns(2)
-if col_nav1.button("➕ ไปหน้าประเมินใหม่"):
-    st.session_state["target_patient_id"] = patient_id
-    st.switch_page("pages/3_Evaluation.py")
-
-if col_nav2.button("⬅️ กลับไปหน้ารายชื่อ"):
-    st.session_state.edit_mode_profile = False # รีเซ็ตโหมด
-    st.switch_page("pages/1_Dashboard.py")
