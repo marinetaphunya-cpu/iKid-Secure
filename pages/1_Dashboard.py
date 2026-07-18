@@ -18,6 +18,15 @@ def init_supabase():
 supabase = init_supabase()
 
 st.title("📋 รายชื่อผู้ป่วย")
+# วางไว้ต่อจาก st.title (บรรทัดที่ 20)
+selected_name = st.selectbox("เลือกชื่อผู้ป่วยเพื่อดูประวัติ", st.session_state.patient_df["name"])
+
+if st.button("ไปหน้าประวัติของคนนี้"):
+    # หา ID ของคนนั้นจากชื่อ
+    patient_row = st.session_state.patient_df[st.session_state.patient_df["name"] == selected_name]
+    st.query_params["patient_id"] = patient_row["id"].iloc[0]
+    st.switch_page("pages/2_Profile.py")
+
 
 # 4. ฟังก์ชันดึงข้อมูล (แบบไม่ใช้ cache รบกวนการทำงาน)
 def get_data_from_db():
