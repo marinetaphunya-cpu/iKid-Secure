@@ -26,10 +26,11 @@ patient = patient_res.data[0] if patient_res.data else {}
 assess_res = supabase.table("assessments").select("*").eq("patient_id", patient_id).order("created_at", desc=True).execute()
 df = pd.DataFrame(assess_res.data)
 
-# 3. ส่วนหัวและสรุปข้อมูล
+# 3. ส่วนหัว
 st.title(f"👤 ประวัติการรักษา: {patient.get('name', 'ไม่ระบุชื่อ')}")
 st.markdown("---")
 
+# 4. สรุปข้อมูลล่าสุด
 st.subheader("📊 สรุปข้อมูลล่าสุด")
 if not df.empty:
     latest = df.iloc[0]
@@ -42,13 +43,19 @@ else:
 
 st.divider()
 
-# 4. โซนประวัติย้อนหลัง (วันที่สวยงาม + แก้ไขได้)
+# 5. ประวัติย้อนหลัง (ระบบวันที่แปลง พ.ศ. ให้แล้ว)
 st.subheader("📜 ประวัติย้อนหลัง")
 
-# แปลงวันที่ให้เป็น DD/MM/YYYY
+# แปลงจากฐานข้อมูล (YYYY-MM-DD) มาเป็น (DD/MM/YYYY) เพื่อแสดงผล
 if not df.empty:
     df_display = df.copy()
-    df_display['created_at'] = pd.to_datetime(df_display['created_at']).dt.strftime('%d/%m/%Y')
+    def format_date_to_th(date_str):
+        try:
+            dt = pd.to_datetime(date_str)
+            return dt.strftime(f'%d/%m/{dt.year + 543}')
+        except:
+            return date_str
+    df_display['created_at'] = df_display['created_at'].apply(format_date_to_th)
 else:
     df_display = pd.DataFrame(columns=['created_at', 'incident_count', 'aggression_level', 'behavior_note'])
 
@@ -59,13 +66,13 @@ if not st.session_state.edit_mode:
     if not df_display.empty:
         st.dataframe(df_display.drop(columns=['id', 'patient_id'], errors='ignore'), use_container_width=True)
     else:
-        st.write("---")
+        st.write("ยังไม่มีประวัติการประเมินในระบบ")
     
     if st.button("✏️ เพิ่ม/แก้ไข ข้อมูล"):
         st.session_state.edit_mode = True
         st.rerun()
 else:
-    st.info("💡 คำแนะนำ: พิมพ์วันที่ในรูปแบบ 18/07/2569 (หรือเว้นว่างไว้ระบบจะใส่วันที่ปัจจุบันให้)")
+    st.info("💡 คำแนะนำ: พิมพ์วันที่ในรูปแบบ 18/07/2569")
     edited_df = st.data_editor(
         df_display.drop(columns=['id', 'patient_id'], errors='ignore'), 
         use_container_width=True, 
@@ -75,22 +82,28 @@ else:
     col_b1, col_b2 = st.columns([1, 5])
     if col_b1.button("💾 บันทึก"):
         try:
-            # จัดการวันที่ก่อนบันทึก
-            edited_df['created_at'] = edited_df['created_at'].fillna(datetime.now().strftime('%d/%m/%Y'))
+            # แปลงวันที่กลับจาก พ.ศ. เป็น ค.ศ. (YYYY-MM-DD) ก่อนบันทึกลง Supabase
+            def convert_date_to_db(date_str):
+                try:
+                    day, month, year_be = str(date_str).split('/')
+                    return f"{int(year_be) - 543}-{month}-{day}"
+                except:
+                    return datetime.now().strftime('%Y-%m-%d')
+
+            edited_df['created_at'] = edited_df['created_at'].apply(convert_date_to_db)
             edited_df['patient_id'] = patient_id
             
-            records = edited_df.to_dict(orient='records')
-            supabase.table("assessments").upsert(records).execute()
+            supabase.table("assessments").upsert(edited_df.to_dict(orient='records')).execute()
             st.session_state.edit_mode = False
-            st.success("✅ บันทึกเรียบร้อย!")
+            st.success("✅ บันทึกเรียบร้อยเจ้า!")
             st.rerun()
         except Exception as e:
-            st.error(f"❌ บันทึกพลาด: {e}")
+            st.error(f"❌ บันทึกพลาด (เช็ควันที่ว่าพิมพ์เป็น DD/MM/2569 หรือไม่): {e}")
     if col_b2.button("❌ ยกเลิก"):
         st.session_state.edit_mode = False
         st.rerun()
 
-# 5. ปุ่มนำทาง (อยู่ล่างสุด เด่นชัด)
+# 6. ปุ่มนำทาง
 st.divider()
 if st.button("🚀 แบบประเมิน (Evaluation)", use_container_width=True):
     st.session_state["target_patient_id"] = patient_id
@@ -99,5 +112,6 @@ if st.button("🚀 แบบประเมิน (Evaluation)", use_container_w
 if st.button("⬅️ กลับหน้ารายชื่อ", use_container_width=True):
     st.session_state.edit_mode = False
     st.switch_page("pages/1_Dashboard.py")
+
 
 
