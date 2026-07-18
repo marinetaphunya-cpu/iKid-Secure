@@ -12,19 +12,19 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
-# ดึงข้อมูลจาก Supabase (ถ้ายังไม่มีใน session)
+# ฟังก์ชันดึงข้อมูล
 def fetch_data():
     response = supabase.table("patients").select("*").execute()
-    if response.data:
+    if response.data and len(response.data) > 0:
         return pd.DataFrame(response.data)
     else:
-        # ถ้าไม่มีข้อมูลใน Supabase ให้ใช้ค่าเริ่มต้น
+        # กรณีตารางว่าง ให้สร้าง DataFrame เริ่มต้นที่ตรงกับโครงสร้างฐานข้อมูล
         return pd.DataFrame({
-            "ลำดับ": [1, 2, 3, 4, 5], 
-            "name": ["A", "B", "C", "D", "E"],
-            "Diagnosis": ["Depression", "ASD", "ASD", "ADHD", "ASD"],
-            "Aggression Level": [1, 2, 3, 1, 2],
-            "หมายเหตุ": ["", "", "", "", ""]
+            "id": [1], 
+            "name": ["ตัวอย่าง"],
+            "diagnosis": ["None"],
+            "aggression_level": [0],
+            "หมายเหตุ": [""]
         })
 
 if "patient_df" not in st.session_state:
@@ -37,14 +37,14 @@ st.markdown("""<style>
 
 st.title("📋 รายชื่อผู้ป่วย")
 
-# แก้ชื่อให้ตรงกับ Supabase 100%
+# ตั้งค่าคอลัมน์ให้ตรงกับชื่อใน Supabase
 column_configuration = {
     "id": st.column_config.NumberColumn("ลำดับ", width="small"),
     "name": st.column_config.TextColumn("ชื่อ", width="medium"),
+    "diagnosis": st.column_config.TextColumn("การวินิจฉัย", width="medium"),
     "aggression_level": st.column_config.NumberColumn("ระดับความรุนแรง", format="%d"),
     "หมายเหตุ": st.column_config.TextColumn("หมายเหตุ", width="large")
 }
-
 
 # โหมดแก้ไข
 if 'edit_mode' not in st.session_state:
@@ -52,15 +52,17 @@ if 'edit_mode' not in st.session_state:
 
 if st.button("แก้ไข" if not st.session_state.edit_mode else "บันทึก"):
     if st.session_state.edit_mode:
-        # กดบันทึก: ส่งข้อมูลไป Supabase
-        # ต้องแน่ใจว่าตารางใน Supabase ชื่อ "patients" และมีคอลัมน์ตรงกัน
+        # บันทึกลง Supabase
         data_to_save = st.session_state.patient_df.to_dict(orient='records')
         supabase.table("patients").upsert(data_to_save).execute()
-        st.success("บันทึกลงฐานข้อมูลแล้วเจ้า!")
+        st.success("บันทึกข้อมูลเรียบร้อยเจ้า!")
+        # รีโหลดข้อมูลล่าสุดจากฐานข้อมูล
+        st.session_state.patient_df = fetch_data()
+    
     st.session_state.edit_mode = not st.session_state.edit_mode
     st.rerun()
 
-# แสดงผล
+# แสดงผลข้อมูล
 if st.session_state.edit_mode:
     st.session_state.patient_df = st.data_editor(
         st.session_state.patient_df, 
