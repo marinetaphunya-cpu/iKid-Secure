@@ -10,7 +10,7 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# 1. เช็ก ID ก่อน ถ้าไม่มีให้กลับหน้าหลัก
+# 1. เช็ก ID ก่อน
 patient_id = st.session_state.get("target_patient_id")
 if not patient_id:
     st.warning("ไม่ได้เลือกผู้ป่วยเจ้า กลับไปเลือกที่หน้า Dashboard นะเจ้า 🐈‍⬛")
@@ -18,7 +18,7 @@ if not patient_id:
         st.switch_page("pages/1_Dashboard.py")
     st.stop()
 
-# 2. ดึงข้อมูลแบบปลอดภัย
+# 2. ดึงข้อมูล
 patient_res = supabase.table("patients").select("*").eq("id", patient_id).execute()
 patient = patient_res.data[0] if patient_res.data else {}
 
@@ -36,43 +36,36 @@ if not df.empty:
     col2.metric("ระดับความรุนแรง", latest.get('aggression_level', '-'))
     col3.metric("พฤติกรรมล่าสุด", latest.get('behavior_note', '-'))
 else:
-    st.info("ยังไม่มีข้อมูลประวัติ 😔")
+    st.info("ยังไม่มีข้อมูลประวัติของคนไข้ท่านนี้เจ้า ✨")
 
 st.divider()
 
-# 4. โซนประวัติย้อนหลัง
+# 4. โซนประวัติย้อนหลัง (แก้ไขได้)
+st.subheader("📜 ประวัติย้อนหลัง")
 if "edit_mode" not in st.session_state:
     st.session_state.edit_mode = False
 
-st.subheader("📜 ประวัติย้อนหลัง")
 if not df.empty:
     if not st.session_state.edit_mode:
-        # โหมดแสดงผลปกติ
         st.dataframe(df.drop(columns=['id', 'patient_id'], errors='ignore'), use_container_width=True)
         if st.button("✏️ แก้ไขประวัติเดิม"):
             st.session_state.edit_mode = True
             st.rerun()
     else:
-        # โหมดแก้ไข
         edited_df = st.data_editor(df, column_config={"id": None, "patient_id": None}, use_container_width=True)
         col_b1, col_b2 = st.columns([1, 5])
         if col_b1.button("💾 บันทึก"):
-            try:
-                records = edited_df.to_dict(orient='records')
-                supabase.table("assessments").upsert(records).execute()
-                st.session_state.edit_mode = False
-                st.success("บันทึกเรียบร้อย! ✨")
-                st.rerun()
-            except Exception as e:
-                st.error(f"บันทึกพลาด: {e}")
+            records = edited_df.to_dict(orient='records')
+            supabase.table("assessments").upsert(records).execute()
+            st.session_state.edit_mode = False
+            st.rerun()
         if col_b2.button("❌ ยกเลิก"):
             st.session_state.edit_mode = False
             st.rerun()
 else:
-    st.write("---")
-    st.write("ยังไม่มีประวัติการประเมินในระบบ")
+    st.write("ยังไม่มีประวัติการประเมินในระบบเจ้า")
 
-# 5. ปุ่มควบคุม (ปุ่มหลักอยู่ตรงกลาง)
+# 5. ปุ่มนำทาง (เอาไว้นอกเงื่อนไข เพื่อให้ขึ้นตลอดเวลา)
 st.divider()
 c1, c2, c3 = st.columns([1, 2, 1])
 
@@ -82,6 +75,7 @@ with c1:
         st.switch_page("pages/1_Dashboard.py")
 
 with c2:
+    # ปุ่มนี้จะขึ้นให้เห็นเสมอ ไม่ว่าจะมีข้อมูลประวัติเก่าหรือไม่เจ้า!
     if st.button("🚀 แบบประเมิน (Evaluation)", use_container_width=True):
-        st.session_state["target_patient_id"] = patient_id # ย้ำ ID อีกรอบ
+        st.session_state["target_patient_id"] = patient_id
         st.switch_page("pages/3_Evaluation.py")
