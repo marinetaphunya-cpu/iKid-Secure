@@ -37,8 +37,14 @@ if not st.session_state.patient_df.empty:
     selected_name = st.selectbox("เลือกชื่อผู้ป่วยเพื่อดูประวัติ", st.session_state.patient_df["name"])
     if st.button("ไปหน้าประวัติของคนนี้"):
         patient_row = st.session_state.patient_df[st.session_state.patient_df["name"] == selected_name]
-        st.query_params["patient_id"] = patient_row["id"].iloc[0]
+        p_id = str(patient_row["id"].iloc[0])
+        
+        # 1. เขียนค่าลง URL ก่อน
+        st.query_params["patient_id"] = p_id
+        
+        # 2. ค่อยสั่งย้ายหน้า
         st.switch_page("pages/2_Profile.py")
+
 else:
     st.write("กำลังโหลดข้อมูล...")
 
