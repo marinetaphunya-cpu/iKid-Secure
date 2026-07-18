@@ -161,15 +161,15 @@ try:
                 <div style="display: flex; gap: 20px; justify-content: center;">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <div style="width: 14px; height: 14px; background-color: #FFEB3B; border-radius: 0px;"></div>
-                        <span>ระดับ 1 (เหลือง): ต่ำ</span>
+                        <span>ระดับ 1 : ต่ำ</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <div style="width: 14px; height: 14px; background-color: #FF9800; border-radius: 0px;"></div>
-                        <span>ระดับ 2 (ส้ม): ปานกลาง</span>
+                        <span>ระดับ 2 : ปานกลาง</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <div style="width: 14px; height: 14px; background-color: #F44336; border-radius: 0px;"></div>
-                        <span>ระดับ 3 (แดง): สูง</span>
+                        <span>ระดับ 3 : สูง</span>
                     </div>
                 </div>
                 <br>
