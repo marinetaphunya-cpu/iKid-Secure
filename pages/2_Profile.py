@@ -10,61 +10,48 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# 1. รับ ID และดึงข้อมูล
+# 1. ดึง ID จาก Query Params
 patient_id = st.query_params.get("patient_id")
 if not patient_id:
     st.error("ไม่พบข้อมูลผู้ป่วย")
     if st.button("กลับ"): st.switch_page("pages/1_Dashboard.py")
     st.stop()
 
-# ดึงข้อมูลจาก DB
-response = supabase.table("patients").select("*").eq("id", patient_id).execute()
-patient = response.data[0] if response.data else None
+# 2. ดึงข้อมูล 2 ตารางพร้อมกัน
+# ตารางคนไข้
+patient = supabase.table("patients").select("*").eq("id", patient_id).execute().data[0]
+# ตารางประเมิน (ดึงของคนไข้คนนี้คนเดียว)
+assessments = supabase.table("assessment").select("*").eq("patient_id", patient_id).order("created_at", desc=True).execute().data
 
-st.title(f"📋 ประวัติ: {patient['name'] if patient else 'ไม่พบข้อมูล'}")
+st.title(f"📋 ประวัติ: {patient['name']}")
 
-# 2. สถานะแก้ไข
-if "profile_edit_mode" not in st.session_state:
-    st.session_state.profile_edit_mode = False
-
-# 3. โหมดแก้ไข
-if st.session_state.profile_edit_mode:
-    with st.form("edit_profile_form"):
-        new_diagnosis = st.text_input("การวินิจฉัย", value=patient.get('diagnosis', ''))
-        # เพิ่มช่องจำนวนพฤติกรรมความรุนแรง
-        new_incident_count = st.number_input("จำนวนครั้งของพฤติกรรมความรุนแรง", value=int(patient.get('incident_count', 0)))
-        new_level = st.number_input("ระดับความรุนแรง (1-5)", value=int(patient.get('aggression_level', 0)))
-        new_note = st.text_area("หมายเหตุ", value=patient.get('หมายเหตุ', ''))
-        
-        if st.form_submit_button("บันทึกข้อมูล"):
-            try:
-                supabase.table("patients").update({
-                    "diagnosis": new_diagnosis,
-                    "incident_count": new_incident_count,
-                    "aggression_level": new_level,
-                    "หมายเหตุ": new_note
-                }).eq("id", patient_id).execute()
-                
-                st.success("บันทึกเรียบร้อย!")
-                st.session_state.profile_edit_mode = False
-                st.rerun()
-            except Exception as e:
-                st.error(f"ผิดพลาด: {e}")
-else:
-    # โหมดแสดงผลปกติ
+# 3. แสดงข้อมูลสรุป
+col1, col2 = st.columns(2)
+with col1:
     st.write(f"**การวินิจฉัย:** {patient.get('diagnosis', '-')}")
-    st.write(f"**จำนวนครั้งของพฤติกรรมความรุนแรง:** {patient.get('incident_count', 0)} ครั้ง")
-    st.metric("ระดับความรุนแรง", patient.get('aggression_level', 0))
-    st.write(f"**หมายเหตุ:** {patient.get('หมายเหตุ', '-')}")
-    
-    if st.button("แก้ไขข้อมูล"):
-        st.session_state.profile_edit_mode = True
-        st.rerun()
+with col2:
+    if assessments:
+        latest = assessments[0]
+        st.write(f"**จำนวนครั้งล่าสุด:** {latest.get('incident_count', 0)} ครั้ง")
+        st.write(f"**ระดับความรุนแรงล่าสุด:** {latest.get('aggression_level', 0)}")
+    else:
+        st.write("ยังไม่มีประวัติการประเมิน")
 
 st.divider()
 
-# 4. ปุ่มนำทาง
-if st.button("ไปยังหน้าประวัติการประเมิน (Evaluation)"):
+# 4. แสดงตารางประวัติย้อนหลัง
+if assessments:
+    st.subheader("ประวัติการประเมินย้อนหลัง")
+    df_assess = pd.DataFrame(assessments)
+    # แสดงเฉพาะคอลัมน์ที่น่าสนใจ
+    st.table(df_assess[['created_at', 'incident_count', 'aggression_level', 'หมายเหตุ']])
+else:
+    st.info("ยังไม่มีข้อมูลการประเมินในระบบ")
+
+st.divider()
+
+# 5. ปุ่มนำทาง
+if st.button("ไปยังหน้าประเมินใหม่ (Evaluation)"):
     st.query_params["patient_id"] = patient_id
     st.switch_page("pages/3_Evaluation.py")
 
