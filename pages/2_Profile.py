@@ -19,7 +19,7 @@ df = pd.DataFrame(assess_res.data)
 # 2. หัวข้อใหญ่
 st.title(f"👤 ประวัติของ: {patient.get('name')}")
 
-# 3. โชว์ส่วน Summary (ในแอก/หน้าแรกของโปรไฟล์)
+# 3. โซนสรุป (โชว์เสมอ)
 st.subheader("📊 สรุปข้อมูลล่าสุด")
 if not df.empty:
     latest = df.iloc[0]
@@ -32,31 +32,54 @@ else:
 
 st.divider()
 
-# 4. ประวัติย้อนหลัง (แก้ไขได้)
-st.subheader("📜 ประวัติย้อนหลัง (แก้ไขได้)")
+# 4. ประวัติย้อนหลัง (มีโหมดแก้ไข)
+st.subheader("📜 ประวัติย้อนหลัง")
+
+# จัดการโหมดแก้ไขด้วย session_state
+if "edit_mode_profile" not in st.session_state:
+    st.session_state.edit_mode_profile = False
+
 if not df.empty:
-    edited_df = st.data_editor(
-        df,
-        column_config={"id": None, "patient_id": None},
-        use_container_width=True
-    )
-    
-    if st.button("💾 บันทึกการแก้ไข"):
-        try:
-            records = edited_df.to_dict(orient='records')
-            supabase.table("assessments").upsert(records).execute()
-            st.success("บันทึกเรียบร้อยเจ้า!")
+    if not st.session_state.edit_mode_profile:
+        # โหมดปกติ: แสดงตารางเฉยๆ
+        st.dataframe(df.drop(columns=['id', 'patient_id'], errors='ignore'), use_container_width=True)
+        if st.button("✏️ กดเพื่อแก้ไขข้อมูล"):
+            st.session_state.edit_mode_profile = True
             st.rerun()
-        except Exception as e:
-            st.error(f"เกิดข้อผิดพลาด: {e}")
+    else:
+        # โหมดแก้ไข: แสดง data_editor
+        st.info("อยู่ในโหมดแก้ไขแล้วเจ้า! แก้ไขตารางได้เลย")
+        edited_df = st.data_editor(
+            df,
+            column_config={"id": None, "patient_id": None},
+            use_container_width=True
+        )
+        
+        col_btn1, col_btn2 = st.columns(2)
+        if col_btn1.button("💾 บันทึกการแก้ไข"):
+            try:
+                records = edited_df.to_dict(orient='records')
+                supabase.table("assessments").upsert(records).execute()
+                st.session_state.edit_mode_profile = False
+                st.success("บันทึกเรียบร้อยเจ้า!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"เกิดข้อผิดพลาด: {e}")
+        
+        if col_btn2.button("❌ ยกเลิก"):
+            st.session_state.edit_mode_profile = False
+            st.rerun()
 else:
     st.info("ยังไม่มีข้อมูลประวัติย้อนหลัง")
 
+st.divider()
+
 # 5. ปุ่มนำทาง
-if st.button("➕ ไปหน้าประเมินใหม่"):
+col_nav1, col_nav2 = st.columns(2)
+if col_nav1.button("➕ ไปหน้าประเมินใหม่"):
     st.session_state["target_patient_id"] = patient_id
     st.switch_page("pages/3_Evaluation.py")
 
-if st.button("⬅️ กลับไปหน้ารายชื่อ"):
+if col_nav2.button("⬅️ กลับไปหน้ารายชื่อ"):
+    st.session_state.edit_mode_profile = False # รีเซ็ตโหมด
     st.switch_page("pages/1_Dashboard.py")
-
