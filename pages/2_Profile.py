@@ -10,11 +10,8 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# 1. ดึง ID จาก Query Params
-patient_id = st.query_params.get("patient_id")
-# 1. รับ ID จาก Query Params
-patient_id = st.query_params.get("patient_id")
 
+patient_id = st.session_state.get("target_patient_id")
 st.write(f"DEBUG: patient_id คือ {patient_id}") 
 
 if not patient_id:
