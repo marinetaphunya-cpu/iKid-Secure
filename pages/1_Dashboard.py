@@ -56,29 +56,34 @@ if st.session_state.get('edit_mode', False):
         
         # ปุ่มบันทึก (แก้การย่อหน้าให้ตรงกับ with st.form)
                 # ปุ่มบันทึก
-        if st.form_submit_button("บันทึกข้อมูล"):
+                if st.form_submit_button("บันทึกข้อมูล"):
             try:
-                # 1. เปลี่ยนค่า NaN (ช่องว่าง) ให้กลายเป็น None (เพื่อให้เป็นค่าว่างที่ Supabase ยอมรับ)
-                new_df = new_df.where(pd.notnull(new_df), None)
+                # 1. จัดการค่า None/NaN ให้หมดทั้งตารางก่อนเลยเจ้า
+                # สิ่งนี้จะเปลี่ยนช่องว่างทุกอย่างให้เป็น None ที่เป็นค่าว่างจริงๆ
+                clean_df = new_df.where(pd.notnull(new_df), None)
                 
-                # 2. แปลงคอลัมน์ตัวเลข
+                # 2. ทำการแปลงเฉพาะคอลัมน์ที่เป็นตัวเลข
+                # เราจะแปลงจาก clean_df ที่สะอาดแล้วเจ้า
                 cols_to_fix = ['id', 'aggression_level'] 
                 for col in cols_to_fix:
-                    if col in new_df.columns:
-                        # ใช้ errors='coerce' เพื่อเปลี่ยนค่าที่ว่างให้เป็น 0 แทนที่จะเป็น NaN
-                        new_df[col] = pd.to_numeric(new_df[col], errors='coerce').fillna(0).astype(int)
+                    if col in clean_df.columns:
+                        # แปลงเป็นตัวเลข ถ้าช่องไหนว่างให้เป็น 0
+                        clean_df[col] = pd.to_numeric(clean_df[col], errors='coerce').fillna(0).astype(int)
 
+                # 3. แปลงเป็น dict เพื่อส่งให้ Supabase (สะอาดแน่นอนเจ้า)
+                data_to_save = clean_df.to_dict(orient='records')
+                
                 # บันทึกลง Supabase
-                data_to_save = new_df.to_dict(orient='records')
                 supabase.table("patients").upsert(data_to_save).execute()
                 
                 # อัปเดต state
-                st.session_state.patient_df = new_df
+                st.session_state.patient_df = clean_df
                 st.success("บันทึกข้อมูลเรียบร้อย!")
                 st.session_state.edit_mode = False
                 st.rerun() 
             except Exception as e:
                 st.error(f"บันทึกพลาด: {e}")
+
 
 
 else:
