@@ -35,7 +35,7 @@ if not df.empty:
     col2.metric("ระดับความรุนแรง", latest.get('aggression_level', '-'))
     col3.metric("พฤติกรรมล่าสุด", latest.get('behavior_note', '-'))
 else:
-    st.info("ยังไม่มีข้อมูลประวัติของคนไข้ท่านนี้เจ้า ✨")
+    st.info("ยังไม่มีข้อมูลประวัติ ✨")
 
 st.divider()
 
@@ -54,7 +54,7 @@ if not st.session_state.edit_mode:
     if not df.empty:
         st.dataframe(df_to_edit, use_container_width=True)
     else:
-        st.write("ยังไม่มีประวัติการประเมินในระบบเจ้า")
+        st.write("ยังไม่มีประวัติการประเมินในระบบ")
     
     if st.button("✏️ เพิ่ม/แก้ไข ประวัติ"):
         st.session_state.edit_mode = True
@@ -71,7 +71,7 @@ else:
             records = edited_df.to_dict(orient='records')
             supabase.table("assessments").upsert(records).execute()
             st.session_state.edit_mode = False
-            st.success("บันทึกเรียบร้อยเจ้า! ✨")
+            st.success("บันทึกเรียบร้อย! ✨")
             st.rerun()
         except Exception as e:
             st.error(f"บันทึกพลาด: {e}")
