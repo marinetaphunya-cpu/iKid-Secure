@@ -13,7 +13,7 @@ def init_supabase():
 
 supabase = init_supabase()
 
-st.title("📊 สถิติภาพรวม")
+st.title("📊 สถิติภาพรวมความปลอดภัยผู้ป่วย")
 st.markdown("---")
 
 try:
@@ -22,7 +22,7 @@ try:
     df = pd.DataFrame(response.data)
 
     if not df.empty:
-        # --- ส่วน Clean ข้อมูล (เตรียมข้อมูลเพื่อแสดงผล ไม่ได้สมมติค่า) ---
+        # --- ส่วน Clean ข้อมูล (เตรียมข้อมูลเพื่อแสดงผล) ---
         # 1. แปลง created_at เป็น datetime และลบแถวที่ไม่มีวันที่ (เพื่อใช้ทำกราฟแนวโน้ม)
         df["created_at"] = pd.to_datetime(df["created_at"], errors='coerce')
         df = df.dropna(subset=['created_at']) 
@@ -40,7 +40,7 @@ try:
         if df.empty:
              st.info("ยังไม่มีข้อมูลการประเมินระดับ 1-3 ในระบบเจ้า ✨")
         else:
-            # --- ส่วนแสดง KPI (คำนวณจากข้อมูลจริงที่ดึงมา) ---
+            # --- ส่วนแสดง KPI (คำนวณจากข้อมูลจริงที่ดึงมาทั้งหมด) ---
             total_incidents = df["incident_count"].sum()
             max_level = int(df["aggression_level"].max())
             avg_level = round(df["aggression_level"].mean(), 1)
@@ -91,7 +91,7 @@ try:
             
             # แก้ Layout ให้ Pie เห็นชัดบนมือถือ
             fig_pie.update_layout(
-                legend=dict(orientation="v", yanchor="middle", y=0.5, xanchor="left", x=1),
+                legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5),
                 margin=dict(t=10, b=10, l=10, r=10)
             )
             st.plotly_chart(fig_pie, use_container_width=True)
@@ -133,7 +133,7 @@ try:
                     st.info("ยังไม่มีข้อมูลของปี 2026 ในระบบ")
 
     else:
-        st.info("ยังไม่มีข้อมูลในระบบ ✨")
+        st.info("ยังไม่มีข้อมูลในระบบเจ้า ✨")
 
 except Exception as e:
     st.error(f"เกิดข้อผิดพลาดในการดึงข้อมูล: {e}")
@@ -142,5 +142,6 @@ st.divider()
 # ปุ่มกลับ
 if st.button("⬅️ กลับหน้า Dashboard", use_container_width=True):
     st.switch_page("pages/1_Dashboard.py")
+
 
 
