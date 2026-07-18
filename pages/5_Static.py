@@ -13,17 +13,16 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# **จุดสำคัญ 1: กำหนดสีมาตรฐานสำหรับ 3 ระดับ**
-# เพื่อให้กราฟทุกตัวใช้สีเดียวกัน (เหลือง, ส้ม, แดง)
-LEVEL_COLORS = {1.0: '#FFEB3B', 2.0: '#FF9800', 3.0: '#F44336'} # เหลือง, ส้ม, แดง
+# **จุดสำคัญ 1: กำหนดสีมาตรฐานสำหรับ 3 ระดับ (ใช้ key เป็น string "1","2","3")**
+LEVEL_COLORS = {"1": "#FFEB3B", "2": "#FF9800", "3": "#F44336"}  # เหลือง, ส้ม, แดง
+LEVEL_ORDER = ["1", "2", "3"]
 
 # **จุดสำคัญ 2: เปลี่ยนจุดสี Legend ในเชิงสถิติให้เป็นสี่เหลี่ยม**
 st.markdown(
     """
     <style>
-    /* เปลี่ยนจุด Legend ของ Plotly ให้เป็นสี่เหลี่ยม */
     .legend-item rect {
-        rx: 0 !important; /* ทำให้มุมไม่มน */
+        rx: 0 !important;
         ry: 0 !important;
         width: 14px !important;
         height: 14px !important;
@@ -38,7 +37,7 @@ col_title1, col_title2 = st.columns([10, 1])
 with col_title1:
     st.title("📊 สถิติภาพรวมความปลอดภัยผู้ป่วย ✨")
 with col_title2:
-    pass # ไม่ใช้สติกเกอร์เพิ่มในส่วนนี้
+    pass
 st.markdown("---")
 
 try:
@@ -48,21 +47,19 @@ try:
 
     if not df.empty:
         # --- ส่วน Clean ข้อมูล ---
-        # 1. แปลง created_at เป็น datetime และลบแถวที่ไม่มีวันที่
         df["created_at"] = pd.to_datetime(df["created_at"], errors='coerce')
-        df = df.dropna(subset=['created_at']) 
+        df = df.dropna(subset=['created_at'])
 
-        # 2. แปลง aggression_level ให้เป็นตัวเลข
-        df["aggression_level"] = df["aggression_level"].astype(str).str.extract('(\d+)').astype(float)
+        df["aggression_level"] = df["aggression_level"].astype(str).str.extract(r'(\d+)').astype(float)
+        df["incident_count"] = df["incident_count"].astype(str).str.extract(r'(\d+)').astype(float).fillna(1.0)
 
-        # 3. แปลง incident_count ให้เป็นตัวเลข
-        df["incident_count"] = df["incident_count"].astype(str).str.extract('(\d+)').astype(float).fillna(1.0)
+        df_filtered = df[df["aggression_level"].isin([1.0, 2.0, 3.0])].copy()
 
-        # กรองเอาเฉพาะเคสที่มีระดับ 1, 2, หรือ 3
-        df_filtered = df[df["aggression_level"].isin([1.0, 2.0, 3.0])]
+        # **แปลง aggression_level เป็น string ตั้งแต่ต้น เพื่อให้ Plotly ใช้สีแบบ discrete ตาม color_discrete_map**
+        df_filtered["level_str"] = df_filtered["aggression_level"].astype(int).astype(str)
 
         if df_filtered.empty:
-             st.info("ยังไม่มีข้อมูลการประเมินระดับ 1-3 ในระบบเจ้า ✨")
+            st.info("ยังไม่มีข้อมูลการประเมินระดับ 1-3 ในระบบเจ้า ✨")
         else:
             # --- ส่วนแสดง KPI ---
             total_cases = int(len(df_filtered))
@@ -73,88 +70,92 @@ try:
             c1.metric("จำนวนเคสรวม (Lv.1-3)", total_cases)
             c2.metric("ระดับความรุนแรงสูงสุด", max_level)
             c3.metric("ค่าเฉลี่ยความรุนแรง", avg_level)
-            
+
             st.divider()
 
             # --- 5. แสดงกราฟ ---
-            
-            # **1. กราฟแท่ง (Bar Chart) - แสดงจำนวนครั้งตามระดับความรุนแรง**
-            st.subheader("📈 จำนวนครั้งตามระดับความรุนแรง (OAS) 📋") 
-            # รวม incident_count ตามระดับจริงที่ดึงมา
-            bar_df = df_filtered.groupby("aggression_level")["incident_count"].sum().reset_index()
-            bar_df["aggression_level_str"] = bar_df["aggression_level"].astype(int).astype(str)
 
-            # ใช้สี เหลือง ส้ม แดง ผ่าน discrete mapping
-            fig_bar = px.bar(bar_df, x="aggression_level_str", y="incident_count",
-                             color="aggression_level",
-                             color_discrete_map=LEVEL_COLORS)
+            # **1. กราฟแท่ง (Bar Chart)**
+            st.subheader("📈 จำนวนครั้งตามระดับความรุนแรง (OAS) 📋")
+            bar_df = df_filtered.groupby("level_str")["incident_count"].sum().reindex(LEVEL_ORDER, fill_value=0).reset_index()
 
-            fig_bar.update_layout(xaxis_title="ระดับความรุนแรง (OAS)", yaxis_title="จำนวนครั้ง", coloraxis_showscale=False)
+            fig_bar = px.bar(
+                bar_df, x="level_str", y="incident_count",
+                color="level_str",
+                category_orders={"level_str": LEVEL_ORDER},
+                color_discrete_map=LEVEL_COLORS
+            )
+
+            fig_bar.update_layout(xaxis_title="ระดับความรุนแรง (OAS)", yaxis_title="จำนวนครั้ง")
             fig_bar.update_xaxes(type='category')
             fig_bar.update_traces(showlegend=True, legendgroup="level")
             st.plotly_chart(fig_bar, use_container_width=True)
 
             # **2. แนวโน้มระยะยาว**
             st.divider()
-            st.subheader("📉 แนวโน้มความรุนแรงระยะยาว 📈") 
-            
-            df_filtered["month_name"] = df_filtered["created_at"].dt.month_name() 
-            df_filtered["year_str"] = df_filtered["created_at"].dt.year.astype(int).astype(str) 
-            
+            st.subheader("📉 แนวโน้มความรุนแรงระยะยาว 📈")
+
+            df_filtered["month_name"] = df_filtered["created_at"].dt.month_name()
+            df_filtered["year_str"] = df_filtered["created_at"].dt.year.astype(int).astype(str)
+
             g1, g2 = st.columns(2)
-            
+
             with g1:
                 st.write("แนวโน้มรายเดือน")
-                monthly_trend = df_filtered.groupby(["month_name", "aggression_level"])["incident_count"].sum().reset_index()
-                
-                fig_m = px.scatter(monthly_trend, x="month_name", y="incident_count",
-                                   color="aggression_level", color_discrete_map=LEVEL_COLORS,
-                                   size_max=20)
+                monthly_trend = df_filtered.groupby(["month_name", "level_str"])["incident_count"].sum().reset_index()
 
-                fig_m.update_layout(xaxis_title="เดือน", yaxis_title="จำนวนครั้ง", coloraxis_showscale=False)
-                # **แก้ไขแกน Y เป็น 2 4 6**
-                fig_m.update_yaxes(tick0=0, dtick=2)
+                fig_m = px.scatter(
+                    monthly_trend, x="month_name", y="incident_count",
+                    color="level_str",
+                    category_orders={"level_str": LEVEL_ORDER},
+                    color_discrete_map=LEVEL_COLORS,
+                    size_max=20
+                )
+
+                fig_m.update_layout(xaxis_title="เดือน", yaxis_title="จำนวนครั้ง")
+                # **แก้ไขแกน Y ให้เพิ่มทีละ 2 (ต้องระบุ tickmode="linear" ด้วย ไม่งั้น dtick จะถูกมองข้าม)**
+                fig_m.update_yaxes(tickmode="linear", tick0=0, dtick=2, rangemode="tozero")
                 fig_m.update(layout_showlegend=False)
                 st.plotly_chart(fig_m, use_container_width=True)
                 st.caption("*ความสูงของจุดบนแกน Y แสดงจำนวนครั้งที่เกิดเหตุในระดับนั้นๆ ในแต่ละเดือน")
-                
+
             with g2:
                 st.write("แนวโน้มรายปี")
-                yearly_trend = df_filtered.groupby(["year_str", "aggression_level"])["incident_count"].sum().reset_index()
-                
-                fig_y = px.scatter(yearly_trend, x="year_str", y="incident_count",
-                                   color="aggression_level", color_discrete_map=LEVEL_COLORS,
-                                   size_max=20)
-                
-                fig_y.update_layout(xaxis_title="ปี (Year)", yaxis_title="จำนวนครั้ง", coloraxis_showscale=False)
-                # **แก้ไขแกน Y เป็น 5 10 15 20**
-                fig_y.update_yaxes(tick0=0, dtick=5)
+                yearly_trend = df_filtered.groupby(["year_str", "level_str"])["incident_count"].sum().reset_index()
+
+                fig_y = px.scatter(
+                    yearly_trend, x="year_str", y="incident_count",
+                    color="level_str",
+                    category_orders={"level_str": LEVEL_ORDER},
+                    color_discrete_map=LEVEL_COLORS,
+                    size_max=20
+                )
+
+                fig_y.update_layout(xaxis_title="ปี (Year)", yaxis_title="จำนวนครั้ง")
+                # **แก้ไขแกน Y ให้เพิ่มทีละ 5**
+                fig_y.update_yaxes(tickmode="linear", tick0=0, dtick=5, rangemode="tozero")
                 fig_y.update_xaxes(type='category')
                 fig_y.update(layout_showlegend=False)
                 st.plotly_chart(fig_y, use_container_width=True)
                 st.caption("*ความสูงของจุดบนแกน Y แสดงจำนวนครั้งที่เกิดเหตุในระดับนั้นๆ ในแต่ละปี")
 
-            # **Legend รวมอธิบายความหมายของสีแบบสี่เหลี่ยม (Python Layout)**
+            # **Legend รวมอธิบายความหมายของสีแบบสี่เหลี่ยม**
             st.divider()
             st.markdown("### ความหมายของสี (Legend)")
-            
-            # ใช้ Python Layout (columns) และใส่สี่เหลี่ยม HTML เล็กๆ เพื่อให้สีตรงกัน
-            c_l1, c_l2, c_l3 = st.columns(3)
-            
-            # ใช้ CSS เล็กๆ ผ่าน Markdown เพื่อให้สี่เหลี่ยมสีตรงตาม Python code
+
             st.markdown(
                 f"""
                 <div style="display: flex; gap: 20px; justify-content: center;">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <div style="width: 14px; height: 14px; background-color: {LEVEL_COLORS[1.0]}; border-radius: 0px;"></div>
+                        <div style="width: 14px; height: 14px; background-color: {LEVEL_COLORS["1"]}; border-radius: 0px;"></div>
                         <span>ระดับ 1 (เหลือง): ต่ำ</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <div style="width: 14px; height: 14px; background-color: {LEVEL_COLORS[2.0]}; border-radius: 0px;"></div>
+                        <div style="width: 14px; height: 14px; background-color: {LEVEL_COLORS["2"]}; border-radius: 0px;"></div>
                         <span>ระดับ 2 (ส้ม): ปานกลาง</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <div style="width: 14px; height: 14px; background-color: {LEVEL_COLORS[3.0]}; border-radius: 0px;"></div>
+                        <div style="width: 14px; height: 14px; background-color: {LEVEL_COLORS["3"]}; border-radius: 0px;"></div>
                         <span>ระดับ 3 (แดง): สูง</span>
                     </div>
                 </div>
