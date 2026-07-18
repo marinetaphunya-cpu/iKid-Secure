@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np # เพิ่มตัวนี้มาช่วยจัดการค่าว่าง
 from supabase import create_client
 
 # 1. ตั้งค่าพื้นฐาน
@@ -41,7 +42,7 @@ if not st.session_state.patient_df.empty:
 else:
     st.write("กำลังโหลดข้อมูล...")
 
-# 5. & 6. แก้ไขและบันทึก
+# 5. แก้ไขและบันทึก
 if st.session_state.get('edit_mode', False):
     with st.form("edit_form"):
         st.info("แก้ไขข้อมูลเสร็จแล้วอย่าลืมกดปุ่มบันทึกด้านล่าง")
@@ -53,24 +54,25 @@ if st.session_state.get('edit_mode', False):
             use_container_width=True
         )
         
-        # ปุ่มบันทึก (จัดให้ตรงกับบรรทัด if form_submit_button)
         if st.form_submit_button("บันทึกข้อมูล"):
             try:
-                # ทำความสะอาดข้อมูล
-                clean_df = new_df.where(pd.notnull(new_df), None)
+                # แก้ไขแบบเด็ดขาด: เปลี่ยน NaN ทั้งหมดใน DataFrame ให้เป็น None
+                df_clean = new_df.replace({np.nan: None})
                 
-                # แปลงคอลัมน์ตัวเลข
-                cols_to_fix = ['id', 'aggression_level'] 
-                for col in cols_to_fix:
-                    if col in clean_df.columns:
-                        clean_df[col] = pd.to_numeric(clean_df[col], errors='coerce').fillna(0).astype(int)
-
-                # บันทึกลง Supabase
-                data_to_save = clean_df.to_dict(orient='records')
+                # บังคับคอลัมน์ที่เป็นตัวเลขให้เป็น int (ถ้าว่างให้เป็น 0)
+                for col in ['id', 'aggression_level']:
+                    if col in df_clean.columns:
+                        df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce').fillna(0).astype(int)
+                
+                # แปลงเป็น list ของ dicts เพื่ออัปโหลด
+                data_to_save = df_clean.to_dict(orient='records')
+                
+                # ลบค่า None ออกจาก dictionary ก่อนอัปโหลด (ถ้า Supabase ไม่ชอบค่าว่าง)
+                data_to_save = [{k: v for k, v in row.items() if v is not None} for row in data_to_save]
+                
                 supabase.table("patients").upsert(data_to_save).execute()
                 
-                # อัปเดต
-                st.session_state.patient_df = clean_df
+                st.session_state.patient_df = get_data_from_db() # โหลดใหม่จากฐานข้อมูล
                 st.success("บันทึกข้อมูลเรียบร้อย!")
                 st.session_state.edit_mode = False
                 st.rerun() 
@@ -79,9 +81,7 @@ if st.session_state.get('edit_mode', False):
 
 else:
     st.dataframe(st.session_state.patient_df, column_order=("id", "name", "diagnosis", "aggression_level", "หมายเหตุ"), use_container_width=True)
-    
     if st.button("แก้ไข"):
         st.session_state.edit_mode = True
         st.rerun()
-
 
