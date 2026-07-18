@@ -10,53 +10,56 @@ def init_supabase():
 
 supabase = init_supabase()
 
+# 1. ดึงข้อมูล
 patient_id = st.session_state.get("target_patient_id")
-# ดึงข้อมูล
 patient = supabase.table("patients").select("*").eq("id", patient_id).execute().data[0]
 assess_res = supabase.table("assessments").select("*").eq("patient_id", patient_id).order("created_at", desc=True).execute()
 df = pd.DataFrame(assess_res.data)
 
 st.title(f"👤 ประวัติ: {patient.get('name')}")
 
-# 3. โซนสรุป (จัดขนาดตัวหนังสือให้เท่ากัน และปัดข้อความลงด้านล่าง)
+# 2. โซนสรุป (จัดวางแบบปกติที่ไอด้าชอบ ไม่ใช้ CSS ให้งงเจ้า)
 st.subheader("📊 สรุปข้อมูลล่าสุด")
 if not df.empty:
     latest = df.iloc[0]
-    
-    # ใช้ CSS ช่วยจัดระยะห่างและขนาดตัวอักษร
-    st.markdown("""
-    <style>
-    .metric-container { display: flex; flex-direction: column; align-items: start; }
-    .metric-value { font-size: 24px !important; font-weight: bold; }
-    .metric-label { font-size: 16px !important; margin-top: 5px; color: #888; }
-    </style>
-    """, unsafe_allow_html=True)
-
-    c1, c2, c3 = st.columns(3)
-    # ใช้ Markdown เพื่อให้ตัวเลขและข้อความดูสะอาดตา
-    c1.markdown(f"<div class='metric-container'><span class='metric-value'>{latest.get('incident_count', 0)}</span><span class='metric-label'>จำนวนครั้ง (Incident)</span></div>", unsafe_allow_html=True)
-    c2.markdown(f"<div class='metric-container'><span class='metric-value'>{latest.get('aggression_level', '-')}</span><span class='metric-label'>ระดับความรุนแรง</span></div>", unsafe_allow_html=True)
-    c3.markdown(f"<div class='metric-container'><span class='metric-value' style='font-size:18px !important;'>{latest.get('behavior_note', '-')}</span><span class='metric-label'>พฤติกรรมล่าสุด</span></div>", unsafe_allow_html=True)
-
+    col1, col2, col3 = st.columns(3)
+    col1.metric("จำนวนครั้ง (Incident)", latest.get('incident_count', 0))
+    col2.metric("ระดับความรุนแรง", latest.get('aggression_level', '-'))
+    col3.metric("พฤติกรรมล่าสุด", latest.get('behavior_note', '-'))
 else:
-    st.warning("ยังไม่มีข้อมูลล่าสุด")
+    st.info("ยังไม่มีข้อมูล")
 
 st.divider()
 
-# 4. ประวัติย้อนหลัง (แก้ไขได้)
+# 3. โซนแก้ไข (ทำปุ่มกดแก้ไข เหมือน Dashboard แรกๆ เลยเจ้า)
+if "edit_mode" not in st.session_state:
+    st.session_state.edit_mode = False
+
 st.subheader("📜 ประวัติย้อนหลัง")
 if not df.empty:
-    # ถ้าอยากให้แก้ "ระดับ 1" ได้ ต้องเปลี่ยน Type ใน Supabase เป็น Text นะเจ้า!
-    edited_df = st.data_editor(
-        df.drop(columns=['id', 'patient_id'], errors='ignore'),
-        use_container_width=True
-    )
-    
-    if st.button("💾 บันทึกข้อมูลที่แก้ไข"):
-        try:
-            # ดึงเฉพาะแถวที่แก้ไขแล้วไปอัปเดต (ถ้าไอด้าแก้ข้อมูลในตารางแล้วกดบันทึก)
-            st.success("บันทึกข้อมูลเรียบร้อย!")
-        except Exception as e:
-            st.error(f"บันทึกไม่ได้: {e}")
+    if not st.session_state.edit_mode:
+        st.dataframe(df.drop(columns=['id', 'patient_id'], errors='ignore'), use_container_width=True)
+        if st.button("✏️ แก้ไขข้อมูล"):
+            st.session_state.edit_mode = True
+            st.rerun()
+    else:
+        # โหมดแก้ไข
+        edited_df = st.data_editor(df, column_config={"id": None, "patient_id": None}, use_container_width=True)
+        if st.button("💾 บันทึกข้อมูล"):
+            try:
+                records = edited_df.to_dict(orient='records')
+                supabase.table("assessments").upsert(records).execute()
+                st.session_state.edit_mode = False
+                st.success("บันทึกเรียบร้อย!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"บันทึกไม่ได้: {e}")
+        if st.button("❌ ยกเลิก"):
+            st.session_state.edit_mode = False
+            st.rerun()
 else:
     st.info("ยังไม่มีข้อมูลประวัติย้อนหลัง")
+
+if st.button("⬅️ กลับหน้ารายชื่อ"):
+    st.session_state.edit_mode = False
+    st.switch_page("pages/1_Dashboard.py")
