@@ -10,67 +10,44 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# 1. รับ ID จาก session_state
 patient_id = st.session_state.get("target_patient_id")
-
 if not patient_id:
-    st.error("ไม่พบข้อมูลผู้ป่วย กรุณากลับไปเลือกชื่อผู้ป่วยอีกครั้งเจ้า")
-    if st.button("กลับไปหน้ารายชื่อ"): 
-        st.switch_page("pages/1_Dashboard.py")
+    st.error("ไม่พบข้อมูลผู้ป่วย")
     st.stop()
 
-# 2. ดึงข้อมูล
-try:
-    patient_res = supabase.table("patients").select("*").eq("id", patient_id).execute()
-    patient = patient_res.data[0] if patient_res.data else None
-    
-    # ดึงข้อมูลจาก assessments
-    assess_res = supabase.table("assessments").select("*").eq("patient_id", patient_id).order("created_at", desc=True).execute()
-    assessments = assess_res.data
-except Exception as e:
-    st.error(f"เกิดข้อผิดพลาดในการดึงข้อมูล: {e}")
-    st.stop()
+# 1. ดึงข้อมูล
+patient = supabase.table("patients").select("*").eq("id", patient_id).execute().data[0]
+assess_res = supabase.table("assessments").select("*").eq("patient_id", patient_id).execute()
+assessments_df = pd.DataFrame(assess_res.data)
 
-if not patient:
-    st.error("ไม่พบข้อมูลผู้ป่วยในระบบ")
-    st.stop()
+st.title(f"📋 ประวัติ: {patient.get('name')}")
 
-st.title(f"📋 ประวัติ: {patient.get('name', 'ไม่ระบุชื่อ')}")
+# 2. ส่วนแก้ไข (อันนี้แหละที่ทำให้อ่านอย่างเดียวกลายเป็นแก้ไขได้)
+st.subheader("แก้ไข")
 
-# 3. แสดงข้อมูลสรุป
-col1, col2 = st.columns(2)
-with col1:
-    st.write(f"**การวินิจฉัย:** {patient.get('diagnosis', '-')}")
-    st.write(f"**หมายเหตุ:** {patient.get('หมายเหตุ', '-')}")
+if not assessments_df.empty:
+    # st.data_editor คือหัวใจสำคัญเจ้า!
+    edited_df = st.data_editor(
+        assessments_df,
+        column_config={
+            "id": None, # ซ่อน ID ไม่ให้ใครกดแก้
+            "patient_id": None # ซ่อน ID คนไข้
+        },
+        use_container_width=True
+    )
 
-with col2:
-    if assessments:
-        latest = assessments[0]
-        # ใช้ .get() เพื่อป้องกันกรณีไม่มีคอลัมน์ในฐานข้อมูล
-        st.write(f"**จำนวนครั้งความรุนแรงล่าสุด:** {latest.get('incident_count', 0)} ครั้ง")
-        st.metric("ระดับความรุนแรงล่าสุด", latest.get('aggression_level', 0))
-    else:
-        st.info("ยังไม่มีประวัติการประเมิน")
-
-st.divider()
-
-# 4. แสดงตารางประวัติย้อนหลัง
-if assessments:
-    st.subheader("ประวัติการประเมินย้อนหลัง")
-    df_assess = pd.DataFrame(assessments)
-    
-    # เลือกเฉพาะคอลัมน์ที่มีอยู่จริง เพื่อป้องกัน Error
-    available_cols = [c for c in ['created_at', 'incident_count', 'aggression_level', 'behavior_note'] if c in df_assess.columns]
-    st.table(df_assess[available_cols])
+    # 3. ปุ่มบันทึก
+    if st.button("บันทึกข้อมูล"):
+        try:
+            # แปลง DF ที่แก้แล้วกลับเป็น list
+            records = edited_df.to_dict(orient='records')
+            supabase.table("assessments").upsert(records).execute()
+            st.success("บันทึกข้อมูลย้อนหลังเรียบร้อยแล้วเจ้า!")
+            st.rerun()
+        except Exception as e:
+            st.error(f"บันทึกไม่ได้: {e}")
 else:
-    st.info("ยังไม่มีข้อมูลการประเมินในระบบ")
+    st.info("ยังไม่มีข้อมูลประวัติ")
 
-st.divider()
-
-# 5. ปุ่มนำทาง
-if st.button("ไปยังหน้าประเมินใหม่ (Evaluation)"):
-    st.session_state["target_patient_id"] = patient_id 
-    st.switch_page("pages/3_Evaluation.py")
-
-if st.button("กลับไปหน้ารายชื่อ"):
+if st.button("กลับ"):
     st.switch_page("pages/1_Dashboard.py")
