@@ -69,11 +69,7 @@ col1, col2 = st.columns(2)
 with col1:
     if st.button("⬅️ กลับหน้าหลัก", use_container_width=True):
         st.switch_page("pages/1_Dashboard.py")
-with col2:
-    if st.button("📈 ดูสถิติ", use_container_width=True, type="primary"):
-        # ตรงนี้ไอด้าต้องใส่ชื่อไฟล์หน้าสถิติของไอด้าลงไปนะเจ้า 
-        # เช่น ถ้าไฟล์ชื่อ pages/5_Statistics.py ก็ใส่ "pages/5_Statistics.py"
-        st.switch_page("pages/5_Static.py")
+
 
 
 
