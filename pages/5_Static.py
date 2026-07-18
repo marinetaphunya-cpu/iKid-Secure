@@ -13,7 +13,7 @@ def init_supabase():
 
 supabase = init_supabase()
 
-st.title("📊 สถิติภาพรวมความปลอดภัยผู้ป่วย")
+st.title("📊 สถิติภาพรวมความปลอดภัย")
 st.markdown("---")
 
 # 3. ดึงและประมวลผลข้อมูล
@@ -65,7 +65,7 @@ try:
         st.dataframe(display_df, use_container_width=True)
 
     else:
-        st.info("ยังไม่มีข้อมูลการประเมินในระบบเจ้า ✨")
+        st.info("ยังไม่มีข้อมูลการประเมินในระบบ ✨")
 
 except Exception as e:
     st.error(f"เกิดข้อผิดพลาด: {e}")
