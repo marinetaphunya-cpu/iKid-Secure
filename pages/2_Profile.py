@@ -65,15 +65,18 @@ if not df.empty:
 else:
     st.write("ยังไม่มีประวัติการประเมินในระบบเจ้า")
 
-# 5. ปุ่มนำทาง (เอาไว้นอกเงื่อนไข เพื่อให้ขึ้นตลอดเวลา)
+# 5. ปุ่มนำทาง (จัดเรียงแบบแนวตั้งในหน้าจอแคบ เพื่อไม่ให้มันซ้อนกัน)
 st.divider()
-c1, c2, c3 = st.columns([1, 2, 1])
 
-with c1:
-    if st.button("⬅️ กลับหน้ารายชื่อ"):
-        st.session_state.edit_mode = False
-        st.switch_page("pages/1_Dashboard.py")
+# ปุ่มประเมิน (เอาไว้บนสุด เพราะสำคัญที่สุด)
+if st.button("🚀 เข้าแบบประเมิน (Evaluation)", use_container_width=True):
+    st.session_state["target_patient_id"] = patient_id
+    st.switch_page("pages/3_Evaluation.py")
 
+# ปุ่มกลับ (เอาไว้ล่าง)
+if st.button("⬅️ กลับหน้ารายชื่อ", use_container_width=True):
+    st.session_state.edit_mode = False
+    st.switch_page("pages/1_Dashboard.py")
 with c2:
     # ปุ่มนี้จะขึ้นให้เห็นเสมอ ไม่ว่าจะมีข้อมูลประวัติเก่าหรือไม่เจ้า!
     if st.button("🚀 แบบประเมิน (Evaluation)", use_container_width=True):
