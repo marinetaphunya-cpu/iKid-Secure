@@ -12,31 +12,32 @@ def init_supabase():
 
 supabase = init_supabase()
 
-st.title("📊 สถิติภาพรวม")
+st.title("📊 สถิติภาพรวมความปลอดภัยผู้ป่วย (รายเดือน & รายปี)")
 st.markdown("---")
 
-# 2. ดึงและประมวลผลข้อมูล
 try:
     response = supabase.table("assessments").select("*").execute()
     df = pd.DataFrame(response.data)
 
     if not df.empty:
-        # Clean ข้อมูล
+        # Clean ข้อมูลวันที่
         df["created_at"] = pd.to_datetime(df["created_at"], errors='coerce')
-        df["date_str"] = df["created_at"].dt.strftime('%d/%m/%Y').fillna("ไม่ระบุวันที่")
         df["aggression_level"] = df["aggression_level"].astype(str).str.extract('(\d+)').astype(float).fillna(0)
         
-        # 3. แสดง KPI สรุปแบบอ่านง่าย
+        # สร้างคอลัมน์สำหรับสรุปรายเดือนและรายปี
+        df["month_year"] = df["created_at"].dt.to_period('M').astype(str) # เช่น 2026-07
+        df["year"] = df["created_at"].dt.year.fillna(0).astype(int)
+
+        # KPI สรุป
         c1, c2, c3 = st.columns(3)
         c1.metric("จำนวนเคสรวม", int(len(df)))
         c2.metric("ระดับสูงสุดที่พบ", int(df["aggression_level"].max()))
-        c3.metric("ระดับความรุนแรงเฉลี่ย", round(df["aggression_level"].mean(), 1)) # ปัดเศษเหลือเลขเดียว
+        c3.metric("ระดับความรุนแรงเฉลี่ย", round(df["aggression_level"].mean(), 1))
         
         st.divider()
 
-        # 4. กราฟ 2 ช่อง
+        # กราฟแท่งและพายชาร์ต (คงเดิมตามไอด้าชอบ)
         col1, col2 = st.columns(2)
-        
         with col1:
             st.subheader("📈 จำนวนเคสแยกตามระดับ")
             level_counts = df["aggression_level"].value_counts().sort_index().reset_index()
@@ -44,27 +45,34 @@ try:
             fig_bar = px.bar(level_counts, x="Level", y="Count", color="Level", 
                              color_continuous_scale=["#FFEB3B", "#FF9800", "#F44336"])
             st.plotly_chart(fig_bar, use_container_width=True)
-
         with col2:
-            st.subheader("📊 ประเภทพฤติกรรมก้าวร้าว (OSA)")
-            # สรุปจาก behavior_note (ไอด้าสามารถปรับชื่อได้ถ้าต้องการ)
+            st.subheader("📊 สัดส่วนพฤติกรรม (OSA)")
             fig_pie = px.pie(df, names="behavior_note", hole=0.4)
             st.plotly_chart(fig_pie, use_container_width=True)
 
-        # 5. กราฟเส้นแนวโน้ม (ปรับให้ดูง่ายขึ้น)
-        st.subheader("📉 แนวโน้มความรุนแรงรายวัน")
-        trend_df = df.groupby("date_str")["aggression_level"].mean().reset_index()
-        fig_line = px.line(trend_df, x="date_str", y="aggression_level", markers=True)
-        fig_line.update_layout(yaxis=dict(tickmode='linear', dtick=1)) # ปรับเลขแกน Y ให้เป็นจำนวนเต็ม
-        st.plotly_chart(fig_line, use_container_width=True)
+        # กราฟเส้นแนวโน้ม (ใหม่)
+        st.divider()
+        st.subheader("📉 แนวโน้มความรุนแรงระยะยาว")
+        g1, g2 = st.columns(2)
+        
+        with g1:
+            st.write("แนวโน้มรายเดือน")
+            monthly_trend = df.groupby("month_year")["aggression_level"].mean().reset_index()
+            fig_month = px.line(monthly_trend, x="month_year", y="aggression_level", markers=True)
+            st.plotly_chart(fig_month, use_container_width=True)
+            
+        with g2:
+            st.write("แนวโน้มรายปี")
+            yearly_trend = df.groupby("year")["aggression_level"].mean().reset_index()
+            fig_year = px.line(yearly_trend, x="year", y="aggression_level", markers=True)
+            st.plotly_chart(fig_year, use_container_width=True)
 
     else:
-        st.info("ยังไม่มีข้อมูลการประเมินในระบบ ✨")
+        st.info("ยังไม่มีข้อมูลการประเมินในระบบเจ้า ✨")
 
 except Exception as e:
     st.error(f"เกิดข้อผิดพลาดในการดึงข้อมูล: {e}")
 
-st.divider()
 if st.button("⬅️ กลับหน้า Dashboard", use_container_width=True):
     st.switch_page("pages/1_Dashboard.py")
 
