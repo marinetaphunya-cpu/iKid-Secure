@@ -52,12 +52,12 @@ if st.button("แก้ไข" if not st.session_state.get('edit_mode', False) e
 if st.session_state.get('edit_mode', False):
     st.session_state.patient_df = st.data_editor(
         st.session_state.patient_df,
-        column_order=("id", "name", "diagnosis", "หมายเหตุ"),
+        column_order=("id", "name", "diagnosis", "aggression_level", "หมายเหตุ"),
         num_rows="dynamic", 
         use_container_width=True
     )
 else:
-    st.dataframe(st.session_state.patient_df, column_order=("id", "name", "diagnosis", "หมายเหตุ"), use_container_width=True)
+    st.dataframe(st.session_state.patient_df, column_order=("id", "name", "diagnosis", "aggression_level", "หมายเหตุ"), use_container_width=True)
 
 
 
