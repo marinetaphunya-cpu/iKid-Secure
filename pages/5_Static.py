@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from supabase import create_client
-import matplotlib.pyplot as plt # ยังต้องใช้เผื่อบางฟังก์ชัน
+
 
 # 1. ตั้งค่าหน้าเพจ
 st.set_page_config(layout="wide", page_title="iKid Secure | Statistics")
