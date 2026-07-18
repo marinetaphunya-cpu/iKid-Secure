@@ -68,7 +68,7 @@ try:
             st.plotly_chart(fig_year, use_container_width=True)
 
     else:
-        st.info("ยังไม่มีข้อมูลการประเมินในระบบเจ้า ✨")
+        st.info("ยังไม่มีข้อมูลการประเมินในระบบ ✨")
 
 except Exception as e:
     st.error(f"เกิดข้อผิดพลาดในการดึงข้อมูล: {e}")
