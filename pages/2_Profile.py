@@ -17,25 +17,34 @@ if not patient_id:
     if st.button("กลับ"): st.switch_page("pages/1_Dashboard.py")
     st.stop()
 
-# 2. ดึงข้อมูล 2 ตารางพร้อมกัน
-# ตารางคนไข้
-patient = supabase.table("patients").select("*").eq("id", patient_id).execute().data[0]
-# ตารางประเมิน (ดึงของคนไข้คนนี้คนเดียว)
-assessments = supabase.table("assessment").select("*").eq("patient_id", patient_id).order("created_at", desc=True).execute().data
+# 2. ดึงข้อมูล 2 ตาราง
+# ดึงข้อมูลคนไข้
+patient_res = supabase.table("patients").select("*").eq("id", patient_id).execute()
+patient = patient_res.data[0] if patient_res.data else None
 
-st.title(f"📋 ประวัติ: {patient['name']}")
+# ดึงข้อมูลประเมิน (ของคนไข้คนนี้คนเดียว)
+assess_res = supabase.table("assessments").select("*").eq("patient_id", patient_id).order("created_at", desc=True).execute()
+assessments = assess_res.data
+
+if not patient:
+    st.error("ไม่พบข้อมูลผู้ป่วยในระบบ")
+    st.stop()
+
+st.title(f"📋 ประวัติ: {patient.get('name', 'ไม่ระบุชื่อ')}")
 
 # 3. แสดงข้อมูลสรุป
 col1, col2 = st.columns(2)
 with col1:
     st.write(f"**การวินิจฉัย:** {patient.get('diagnosis', '-')}")
+    st.write(f"**หมายเหตุส่วนตัว:** {patient.get('หมายเหตุ', '-')}")
+
 with col2:
     if assessments:
         latest = assessments[0]
-        st.write(f"**จำนวนครั้งล่าสุด:** {latest.get('incident_count', 0)} ครั้ง")
-        st.write(f"**ระดับความรุนแรงล่าสุด:** {latest.get('aggression_level', 0)}")
+        st.write(f"**จำนวนครั้งความรุนแรงล่าสุด:** {latest.get('incident_count', 0)} ครั้ง")
+        st.metric("ระดับความรุนแรงล่าสุด", latest.get('aggression_level', 0))
     else:
-        st.write("ยังไม่มีประวัติการประเมิน")
+        st.info("ยังไม่มีประวัติการประเมิน")
 
 st.divider()
 
@@ -43,8 +52,8 @@ st.divider()
 if assessments:
     st.subheader("ประวัติการประเมินย้อนหลัง")
     df_assess = pd.DataFrame(assessments)
-    # แสดงเฉพาะคอลัมน์ที่น่าสนใจ
-    st.table(df_assess[['created_at', 'incident_count', 'aggression_level', 'หมายเหตุ']])
+    # แสดงคอลัมน์ตามชื่อจริงใน Supabase
+    st.table(df_assess[['created_at', 'incident_count', 'aggression_level', 'behavior_note']])
 else:
     st.info("ยังไม่มีข้อมูลการประเมินในระบบ")
 
