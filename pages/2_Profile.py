@@ -39,7 +39,7 @@ if not df.empty:
     c3.markdown(f"<div class='metric-container'><span class='metric-value' style='font-size:18px !important;'>{latest.get('behavior_note', '-')}</span><span class='metric-label'>พฤติกรรมล่าสุด</span></div>", unsafe_allow_html=True)
 
 else:
-    st.warning("ยังไม่มีข้อมูลล่าสุดเจ้า")
+    st.warning("ยังไม่มีข้อมูลล่าสุด")
 
 st.divider()
 
