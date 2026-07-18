@@ -31,7 +31,7 @@ if "patient_df" not in st.session_state:
 
 st.title("📋 รายชื่อผู้ป่วย")
 
-# ส่วนเลือกผู้ป่วย (ย้ายมาไว้ใต้ Title)
+# ส่วนเลือกผู้ป่วย
 if not st.session_state.patient_df.empty:
     selected_name = st.selectbox("เลือกชื่อผู้ป่วยเพื่อดูประวัติ", st.session_state.patient_df["name"])
     if st.button("ไปหน้าประวัติของคนนี้"):
@@ -41,7 +41,7 @@ if not st.session_state.patient_df.empty:
 else:
     st.write("กำลังโหลดข้อมูล...")
 
-# 5. & 6. แก้ไขและบันทึกข้อมูลแบบใช้ Form เพื่อให้ข้อมูลไม่หาย
+# 5. & 6. แก้ไขและบันทึกข้อมูลแบบใช้ Form
 if st.session_state.get('edit_mode', False):
     with st.form("edit_form"):
         st.info("แก้ไขข้อมูลเสร็จแล้วอย่าลืมกดปุ่มบันทึกด้านล่างนะเจ้า")
@@ -54,16 +54,14 @@ if st.session_state.get('edit_mode', False):
             use_container_width=True
         )
         
-        # ปุ่มบันทึกต้องอยู่ใน Form ถึงจะไม่รีเซ็ตค่า
-                if st.form_submit_button("บันทึกข้อมูล"):
+        # ปุ่มบันทึก (แก้การย่อหน้าให้ตรงกับ with st.form)
+        if st.form_submit_button("บันทึกข้อมูล"):
             try:
-                # --- เพิ่มตรงนี้เพื่อแปลงให้เป็นเลขจำนวนเต็มก่อนบันทึก ---
-                # ระบุชื่อคอลัมน์ที่เป็นตัวเลขของไอด้า (เช่น id และ aggression_level)
+                # แปลงคอลัมน์ที่เป็นตัวเลขให้เป็น int ก่อนบันทึก
                 cols_to_fix = ['id', 'aggression_level'] 
                 for col in cols_to_fix:
                     if col in new_df.columns:
                         new_df[col] = pd.to_numeric(new_df[col], errors='coerce').fillna(0).astype(int)
-                # ----------------------------------------------------
 
                 # บันทึกลง Supabase
                 data_to_save = new_df.to_dict(orient='records')
