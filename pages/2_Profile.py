@@ -61,7 +61,7 @@ if not df.empty:
                 records = edited_df.to_dict(orient='records')
                 supabase.table("assessments").upsert(records).execute()
                 st.session_state.edit_mode = False
-                st.success("บันทึกเรียบร้อยเจ้า! ✨")
+                st.success("บันทึกเรียบร้อย! ✨")
                 st.rerun()
             except Exception as e:
                 st.error(f"บันทึกพลาด: {e}")
@@ -70,7 +70,7 @@ if not df.empty:
             st.rerun()
 else:
     st.write("---")
-    st.write("ยังไม่มีประวัติการประเมินในระบบเจ้า")
+    st.write("ยังไม่มีประวัติการประเมินในระบบ")
 
 # 5. ปุ่มควบคุม (ปุ่มหลักอยู่ตรงกลาง)
 st.divider()
