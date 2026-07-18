@@ -35,7 +35,7 @@ st.markdown(
 # --- หัวข้อพร้อมสติกเกอร์ ---
 col_title1, col_title2 = st.columns([10, 1])
 with col_title1:
-    st.title("📊 สถิติภาพรวมความปลอดภัยผู้ป่วย ✨")
+    st.title("📊 สถิติภาพรวม ✨")
 with col_title2:
     pass
 st.markdown("---")
@@ -64,12 +64,12 @@ try:
             # --- ส่วนแสดง KPI ---
             total_cases = int(len(df_filtered))
             max_level = int(df_filtered["aggression_level"].max())
-            avg_level = round(df_filtered["aggression_level"].mean(), 1)
+            
 
             c1, c2, c3 = st.columns(3)
             c1.metric("จำนวนเคสรวม (Lv.1-3)", total_cases)
             c2.metric("ระดับความรุนแรงสูงสุด", max_level)
-            c3.metric("ค่าเฉลี่ยความรุนแรง", avg_level)
+            
 
             st.divider()
 
@@ -126,7 +126,7 @@ try:
                 fig_y = px.scatter(
                     yearly_trend, x="year_str", y="incident_count",
                     color="level_str",
-                    category_orders={"level_str": LEVEL_ORDER},
+                    category_orders={"ระดับความรุนแรง": LEVEL_ORDER},
                     color_discrete_map=LEVEL_COLORS,
                     size_max=20
                 )
@@ -141,22 +141,22 @@ try:
 
             # **Legend รวมอธิบายความหมายของสีแบบสี่เหลี่ยม**
             st.divider()
-            st.markdown("### ความหมายของสี (Legend)")
+            st.markdown("ความหมายของสี")
 
             st.markdown(
                 f"""
                 <div style="display: flex; gap: 20px; justify-content: center;">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <div style="width: 14px; height: 14px; background-color: {LEVEL_COLORS["1"]}; border-radius: 0px;"></div>
-                        <span>ระดับ 1 : ต่ำ</span>
+                        <span>ระดับ 1 : กึ่งเร่งด่วน</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <div style="width: 14px; height: 14px; background-color: {LEVEL_COLORS["2"]}; border-radius: 0px;"></div>
-                        <span>ระดับ 2 : ปานกลาง</span>
+                        <span>ระดับ 2 : เร่งด่วน</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <div style="width: 14px; height: 14px; background-color: {LEVEL_COLORS["3"]}; border-radius: 0px;"></div>
-                        <span>ระดับ 3 : สูง</span>
+                        <span>ระดับ 3 : ฉุกเฉิน</span>
                     </div>
                 </div>
                 <br>
@@ -165,7 +165,7 @@ try:
             )
 
     else:
-        st.info("ยังไม่มีข้อมูลการประเมินในระบบเจ้า ✨")
+        st.info("ยังไม่มีข้อมูลการประเมินในระบบ ✨")
 
 except Exception as e:
     st.error(f"เกิดข้อผิดพลาดในการดึงข้อมูล: {e}")
