@@ -18,14 +18,18 @@ def init_supabase():
 supabase = init_supabase()
 
 st.title("📋 รายชื่อผู้ป่วย")
-# วางไว้ต่อจาก st.title (บรรทัดที่ 20)
-selected_name = st.selectbox("เลือกชื่อผู้ป่วยเพื่อดูประวัติ", st.session_state.patient_df["name"])
+#st.title("📋 รายชื่อผู้ป่วย")
 
-if st.button("ไปหน้าประวัติของคนนี้"):
-    # หา ID ของคนนั้นจากชื่อ
-    patient_row = st.session_state.patient_df[st.session_state.patient_df["name"] == selected_name]
-    st.query_params["patient_id"] = patient_row["id"].iloc[0]
-    st.switch_page("pages/2_Profile.py")
+# เพิ่ม if ตรงนี้เพื่อเช็กว่ามีข้อมูลใน session_state หรือยัง
+if "patient_df" in st.session_state and not st.session_state.patient_df.empty:
+    selected_name = st.selectbox("เลือกชื่อผู้ป่วยเพื่อดูประวัติ", st.session_state.patient_df["name"])
+    
+    if st.button("ไปหน้าประวัติของคนนี้"):
+        patient_row = st.session_state.patient_df[st.session_state.patient_df["name"] == selected_name]
+        st.query_params["patient_id"] = patient_row["id"].iloc[0]
+        st.switch_page("pages/2_Profile.py")
+else:
+    st.write("กำลังโหลดข้อมูลผู้ป่วย...") # ให้มันบอกเราว่ากำลังโหลดอยู่
 
 
 # 4. ฟังก์ชันดึงข้อมูล (แบบไม่ใช้ cache รบกวนการทำงาน)
