@@ -7,7 +7,7 @@ score = st.session_state.get("evaluation_score", 0)
 
 st.title("📊 ผลการประเมิน OAS")
 
-# 1. ส่วนแสดงระดับความรุนแรงแบบใส่สติกเกอร์
+# 1. ส่วนแสดงระดับความรุนแรง
 if score == 1:
     st.warning("⚠️ **ระดับ 1 (CODE 91): กึ่งเร่งด่วน**")
     st.markdown("### 📢 ต้องจัดการทันที!")
@@ -63,7 +63,16 @@ if score in guidelines:
             st.write(f"**{k}**: {v}")
 
 st.divider()
-if st.button("⬅️ กลับหน้าหลัก"):
-    st.switch_page("pages/1_Dashboard.py")
+
+# เพิ่มปุ่มนำทาง
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("⬅️ กลับหน้าหลัก", use_container_width=True):
+        st.switch_page("pages/1_Dashboard.py")
+with col2:
+    if st.button("📈 ดูสถิติ", use_container_width=True, type="primary"):
+        # ตรงนี้ไอด้าต้องใส่ชื่อไฟล์หน้าสถิติของไอด้าลงไปนะเจ้า 
+        # เช่น ถ้าไฟล์ชื่อ pages/5_Statistics.py ก็ใส่ "pages/5_Statistics.py"
+        st.switch_page("pages/5_Statistics.py")
 
 
