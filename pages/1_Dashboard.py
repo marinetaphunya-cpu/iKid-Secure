@@ -57,7 +57,7 @@ if st.session_state.get('edit_mode', False):
         use_container_width=True
     )
 else:
-    st.dataframe(st.session_state.patient_df, use_container_width=True)
+    st.dataframe(st.session_state.patient_df, column_order=("id", "name", "diagnosis", "หมายเหตุ"), use_container_width=True)
 
 
 
