@@ -13,7 +13,7 @@ supabase = init_supabase()
 # 1. เช็ก ID ก่อน
 patient_id = st.session_state.get("target_patient_id")
 if not patient_id:
-    st.warning("ไม่ได้เลือกผู้ป่วยเจ้า กลับไปเลือกที่หน้า Dashboard นะเจ้า 🐈‍⬛")
+    st.warning("โปรดเลือกรายชื่อ 🐈‍⬛")
     if st.button("⬅️ กลับไปหน้ารายชื่อ"):
         st.switch_page("pages/1_Dashboard.py")
     st.stop()
@@ -36,7 +36,7 @@ if not df.empty:
     col2.metric("ระดับความรุนแรง", latest.get('aggression_level', '-'))
     col3.metric("พฤติกรรมล่าสุด", latest.get('behavior_note', '-'))
 else:
-    st.info("ยังไม่มีข้อมูลประวัติของคนไข้ท่านนี้เจ้า ✨")
+    st.info("ยังไม่มีข้อมูลประวัติ ✨")
 
 st.divider()
 
@@ -69,7 +69,7 @@ else:
 st.divider()
 
 # ปุ่มประเมิน (เอาไว้บนสุด เพราะสำคัญที่สุด)
-if st.button("🚀 เข้าแบบประเมิน (Evaluation)", use_container_width=True):
+if st.button("🚀 แบบประเมิน (Evaluation)", use_container_width=True):
     st.session_state["target_patient_id"] = patient_id
     st.switch_page("pages/3_Evaluation.py")
 
@@ -77,8 +77,4 @@ if st.button("🚀 เข้าแบบประเมิน (Evaluation)", use
 if st.button("⬅️ กลับหน้ารายชื่อ", use_container_width=True):
     st.session_state.edit_mode = False
     st.switch_page("pages/1_Dashboard.py")
-with c2:
-    # ปุ่มนี้จะขึ้นให้เห็นเสมอ ไม่ว่าจะมีข้อมูลประวัติเก่าหรือไม่เจ้า!
-    if st.button("🚀 แบบประเมิน (Evaluation)", use_container_width=True):
-        st.session_state["target_patient_id"] = patient_id
-        st.switch_page("pages/3_Evaluation.py")
+
