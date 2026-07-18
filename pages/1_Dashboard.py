@@ -43,6 +43,8 @@ if not st.session_state.patient_df.empty:
         st.query_params["patient_id"] = p_id
         
         # 2. ค่อยสั่งย้ายหน้า
+        st.session_state["target_patient_id"] = p_id
+
         st.switch_page("pages/2_Profile.py")
 
 else:
