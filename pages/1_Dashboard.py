@@ -51,7 +51,8 @@ if st.button("แก้ไข" if not st.session_state.get('edit_mode', False) e
 # 6. แสดงผล
 if st.session_state.get('edit_mode', False):
     st.session_state.patient_df = st.data_editor(
-        st.session_state.patient_df, 
+        st.session_state.patient_df,
+        column_order=("id", "name", "diagnosis", "note"),
         num_rows="dynamic", 
         use_container_width=True
     )
