@@ -41,36 +41,40 @@ if not st.session_state.patient_df.empty:
 else:
     st.write("กำลังโหลดข้อมูล...")
 
-# 5. ส่วนควบคุม (แก้ไข/บันทึก)
-# เราใช้ปุ่มเดียวสลับกัน แต่เราจะไม่ rerurn ทันทีในปุ่มบันทึก เพื่อป้องกันข้อมูลหาย
-if st.button("แก้ไข" if not st.session_state.get('edit_mode', False) else "บันทึก"):
-    if st.session_state.get('edit_mode', False):
-        # กดบันทึก: ระบบจะใช้ค่าที่อยู่ใน st.session_state.patient_df ปัจจุบันไปบันทึก
-        try:
-            data_to_save = st.session_state.patient_df.to_dict(orient='records')
-            supabase.table("patients").upsert(data_to_save).execute()
-            st.success("บันทึกข้อมูลเรียบร้อย!")
-            st.session_state.patient_df = get_data_from_db() # ดึงใหม่
-        except Exception as e:
-            st.error(f"บันทึกพลาด: {e}")
-    
-    st.session_state.edit_mode = not st.session_state.get('edit_mode', False)
-    st.rerun()
-
-# 6. แสดงผล (ใช้ column_order ตามที่ไอด้าต้องการ)
-cols_to_show = ("id", "name", "diagnosis", "aggression_level", "หมายเหตุ")
-
+# 5. & 6. แก้ไขและบันทึกข้อมูลแบบใช้ Form เพื่อให้ข้อมูลไม่หาย
 if st.session_state.get('edit_mode', False):
-    st.info("กำลังอยู่ในโหมดแก้ไข...")
-    st.session_state.patient_df = st.data_editor(
-        st.session_state.patient_df,
-        column_order=cols_to_show,
-        num_rows="dynamic", 
-        use_container_width=True
-    )
+    with st.form("edit_form"):
+        st.info("แก้ไขข้อมูลเสร็จแล้วอย่าลืมกดปุ่มบันทึกด้านล่างนะเจ้า")
+        
+        # ตัวแก้ไขข้อมูล
+        new_df = st.data_editor(
+            st.session_state.patient_df,
+            column_order=("id", "name", "diagnosis", "aggression_level", "หมายเหตุ"),
+            num_rows="dynamic",
+            use_container_width=True
+        )
+        
+        # ปุ่มบันทึกต้องอยู่ใน Form ถึงจะไม่รีเซ็ตค่า
+        if st.form_submit_button("บันทึกข้อมูล"):
+            try:
+                # บันทึกลง Supabase
+                data_to_save = new_df.to_dict(orient='records')
+                supabase.table("patients").upsert(data_to_save).execute()
+                
+                # อัปเดต state
+                st.session_state.patient_df = new_df
+                st.success("บันทึกข้อมูลเรียบร้อย!")
+                st.session_state.edit_mode = False
+                st.rerun() # รีเฟรชหน้าจอหลังจากบันทึกเสร็จ
+            except Exception as e:
+                st.error(f"บันทึกพลาด: {e}")
 else:
-    st.dataframe(st.session_state.patient_df, column_order=cols_to_show, use_container_width=True)
-
+    # โหมดแสดงผลปกติ
+    st.dataframe(st.session_state.patient_df, column_order=("id", "name", "diagnosis", "aggression_level", "หมายเหตุ"), use_container_width=True)
+    
+    if st.button("แก้ไข"):
+        st.session_state.edit_mode = True
+        st.rerun()
 
 
 
