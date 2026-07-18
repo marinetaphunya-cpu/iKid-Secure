@@ -65,7 +65,6 @@ if "edit_mode" not in st.session_state:
     st.session_state.edit_mode = False
 
 if not st.edit_mode:
-    # แสดงตารางแบบอ่านอย่างเดียว
     if not df_display.empty:
         st.dataframe(df_display.drop(columns=['id', 'patient_id'], errors='ignore'), use_container_width=True)
     else:
