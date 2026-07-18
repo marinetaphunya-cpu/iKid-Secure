@@ -32,7 +32,7 @@ df = pd.DataFrame(assess_res.data)
 st.title(f"👤 ประวัติการรักษา: {patient.get('name', 'ไม่ระบุชื่อ')}")
 st.markdown("---")
 
-# 4. สรุปข้อมูลล่าสุด (ดึงจากแถวแรกสุดเพราะเราเรียงลำดับใหม่แล้ว)
+# 4. สรุปข้อมูลล่าสุด
 st.subheader("📊 สรุปข้อมูลล่าสุด")
 if not df.empty:
     latest = df.iloc[0]
@@ -45,12 +45,11 @@ else:
 
 st.divider()
 
-# 5. ประวัติย้อนหลัง (แสดงผลวันที่แบบไทย)
+# 5. ประวัติย้อนหลัง
 st.subheader("📜 ประวัติย้อนหลัง")
 
 if not df.empty:
     df_display = df.copy()
-    # ฟังก์ชันแปลง ค.ศ. เป็น พ.ศ. เพื่อแสดงผล
     def format_date_to_th(date_str):
         try:
             dt = pd.to_datetime(date_str)
@@ -61,10 +60,12 @@ if not df.empty:
 else:
     df_display = pd.DataFrame(columns=['created_at', 'incident_count', 'aggression_level', 'behavior_note'])
 
+# ตรวจสอบว่ามีคีย์นี้หรือยัง ถ้าไม่มีให้สร้างค่าเริ่มต้นเป็น False
 if "edit_mode" not in st.session_state:
     st.session_state.edit_mode = False
 
-if not st.edit_mode:
+# แก้ไขตรงนี้เจ้า: ใช้ st.session_state.edit_mode แทน st.edit_mode
+if not st.session_state.edit_mode:
     if not df_display.empty:
         st.dataframe(df_display.drop(columns=['id', 'patient_id'], errors='ignore'), use_container_width=True)
     else:
@@ -84,7 +85,6 @@ else:
     col_b1, col_b2 = st.columns([1, 5])
     if col_b1.button("💾 บันทึก"):
         try:
-            # แปลงวันที่กลับเป็น ค.ศ. สำหรับเก็บในฐานข้อมูล
             def convert_date_to_db(date_str):
                 try:
                     day, month, year_be = str(date_str).split('/')
@@ -93,12 +93,9 @@ else:
                     return datetime.now().strftime('%Y-%m-%d')
 
             edited_df['created_at'] = edited_df['created_at'].apply(convert_date_to_db)
-            
-            # บันทึกข้อมูลที่แก้ไข
             records = edited_df.to_dict(orient='records')
             for r in records:
                 r['patient_id'] = patient_id
-                # ถ้ามี 'id' อยู่แล้วให้ update ถ้าไม่มีให้ insert (จัดการแบบรายแถว)
                 if 'id' in r and r['id']:
                     supabase.table("assessments").update(r).eq("id", r['id']).execute()
                 else:
@@ -122,6 +119,7 @@ if st.button("🚀 แบบประเมิน (Evaluation)", use_container_w
 if st.button("⬅️ กลับหน้ารายชื่อ", use_container_width=True):
     st.session_state.edit_mode = False
     st.switch_page("pages/1_Dashboard.py")
+
 
 
 
