@@ -28,8 +28,17 @@ def get_data_from_db():
 
 df = get_data_from_db()
 
-# หัวข้อพร้อมสติกเกอร์
-st.title("🩺 ระบบจัดการข้อมูลผู้ป่วย iKid Secure 💜")
+# หัวข้อพร้อมปุ่มทางลัดดูสถิติ
+c1, c2 = st.columns([4, 1])
+with c1:
+    st.title("🩺 ระบบจัดการข้อมูลผู้ป่วย iKid Secure 💜")
+with c2:
+    st.write("") # เว้นระยะให้ปุ่มตรงกับหัวข้อ
+    st.write("")
+    if st.button("📈 ดูสถิติภาพรวม", use_container_width=True, type="primary"):
+        # ตรงนี้ไอด้าเช็คชื่อไฟล์ให้ชัวร์นะเจ้าว่าเป็น "pages/5_Static.py" หรือ "pages/5_Statistics.py"
+        st.switch_page("pages/5_Static.py")
+
 st.markdown("---")
 
 # ส่วนเลือกผู้ป่วย
