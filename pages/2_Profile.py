@@ -15,6 +15,14 @@ def init_supabase():
 
 supabase = init_supabase()
 
+# ฟังก์ชันช่วยแปลงวันที่เป็น พ.ศ. (DD/MM/YYYY) สำหรับแสดงผล
+def format_date_th(date_str):
+    try:
+        dt = pd.to_datetime(date_str)
+        return f"{dt.day:02d}/{dt.month:02d}/{dt.year + 543}"
+    except:
+        return date_str
+
 # 2. เช็ก ID และดึงข้อมูล
 patient_id = st.session_state.get("target_patient_id")
 if not patient_id:
@@ -51,8 +59,12 @@ if "edit_mode" not in st.session_state:
 
 if not st.session_state.edit_mode:
     if not df.empty:
-        # แสดงแบบอ่านอย่างเดียว
+        # แสดงแบบอ่านอย่างเดียว: แปลงวันที่ก่อนแสดงผล
         df_display = df.drop(columns=['patient_id'], errors='ignore')
+        if 'created_at' in df_display.columns:
+            df_display['created_at'] = df_display['created_at'].apply(format_date_th)
+            df_display = df_display.rename(columns={'created_at': 'วันที่'})
+        
         st.dataframe(df_display, use_container_width=True)
     else:
         st.write("ยังไม่มีประวัติการประเมินในระบบ")
@@ -61,18 +73,25 @@ if not st.session_state.edit_mode:
         st.session_state.edit_mode = True
         st.rerun()
 else:
-    # โหมดแก้ไข: ต้องโชว์ id ด้วยเพื่อให้ระบบลบถูกแถว
+    # โหมดแก้ไข: ใช้ column_config เพื่อแสดงผลวันที่แบบไทยและมีปฏิทินให้เลือก
     edited_df = st.data_editor(
         df, 
         use_container_width=True, 
         num_rows="dynamic",
-        column_config={"id": None} # ซ่อนคอลัมน์ id ไม่ให้ user เห็น แต่ยังมีค่าอยู่ข้างหลัง
+        column_config={
+            "id": None,
+            "patient_id": None,
+            "created_at": st.column_config.DateColumn(
+                "วันที่",
+                format="DD/MM/YYYY",
+                help="เลือกวันที่จากปฏิทิน"
+            )
+        }
     )
     
     col_b1, col_b2 = st.columns([1, 5])
     if col_b1.button("💾 บันทึก"):
         try:
-            # 1. จัดการลบแถวที่หายไป (ถ้าใน db มี แต่ใน editor ไม่มี = ต้องลบ)
             original_ids = df['id'].tolist()
             current_ids = edited_df['id'].dropna().tolist()
             ids_to_delete = [i for i in original_ids if i not in current_ids]
@@ -80,7 +99,6 @@ else:
             for del_id in ids_to_delete:
                 supabase.table("assessments").delete().eq("id", del_id).execute()
 
-            # 2. Update หรือ Insert ข้อมูลใหม่
             records = edited_df.to_dict(orient='records')
             for r in records:
                 r['patient_id'] = patient_id
@@ -104,7 +122,6 @@ else:
 st.divider()
 if st.button("🚀 ไปหน้าประเมิน", use_container_width=True):
     st.switch_page("pages/3_Evaluation.py")
-
 
 
 
