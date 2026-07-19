@@ -15,7 +15,7 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# ฟังก์ชันแปลง ค.ศ. (ISO) -> พ.ศ. DD/MM/YYYY
+# ฟังก์ชันแปลงวันที่
 def format_date_th(date_str):
     try:
         dt = pd.to_datetime(date_str)
@@ -23,7 +23,6 @@ def format_date_th(date_str):
         return f"{dt.day:02d}/{dt.month:02d}/{dt.year + 543}"
     except: return date_str if date_str else ""
 
-# ฟังก์ชันแปลง พ.ศ. DD/MM/YYYY -> ค.ศ. YYYY-MM-DD
 def th_to_iso(date_str):
     if not date_str or not isinstance(date_str, str): return None
     try:
@@ -47,6 +46,16 @@ assess_res = supabase.table("assessments").select("*").eq("patient_id", patient_
 df = pd.DataFrame(assess_res.data)
 
 st.title(f"👤 ประวัติการรักษา: {patient.get('name', 'ไม่ระบุชื่อ')}")
+
+# --- เพิ่มส่วน Note ประวัติเดิม ---
+with st.expander("📝 ประวัติความรุนแรงเดิม (บันทึกเพิ่มเติม)", expanded=True):
+    current_history = patient.get('history_note', '')
+    new_history = st.text_area("โน้ตบันทึกประวัติ:", value=current_history, height=100)
+    if st.button("บันทึกโน้ตประวัติ"):
+        supabase.table("patients").update({"history_note": new_history}).eq("id", patient_id).execute()
+        st.success("บันทึกเรียบร้อย!")
+        st.rerun()
+
 st.markdown("---")
 
 # 3. แสดงผล (ถ้า df ไม่ว่าง)
@@ -59,7 +68,7 @@ if not df.empty:
     c3.metric("พฤติกรรมล่าสุด", latest.get('behavior_note', '-'))
 
 st.divider()
-st.subheader("📜 ประวัติย้อนหลัง")
+st.subheader("📜 ประวัติการประเมิน (รายครั้ง)")
 
 if "edit_mode" not in st.session_state:
     st.session_state.edit_mode = False
@@ -70,13 +79,11 @@ if not st.session_state.edit_mode:
         if 'created_at' in df_display.columns:
             df_display['created_at'] = df_display['created_at'].apply(format_date_th)
             df_display = df_display.rename(columns={'created_at': 'วันที่ (พ.ศ.)'})
-        
-        # --- ซ่อน id โดยใช้ column_config ---
         st.dataframe(df_display, use_container_width=True, column_config={"id": None})
     else:
         st.write("ยังไม่มีประวัติการประเมินในระบบ")
     
-    if st.button("✏️ เพิ่ม/แก้ไข ข้อมูล"):
+    if st.button("✏️ แก้ไขประวัติการประเมิน"):
         st.session_state.edit_mode = True
         st.rerun()
 else:
@@ -84,7 +91,6 @@ else:
     if 'created_at' in df_for_edit.columns:
         df_for_edit['created_at'] = df_for_edit['created_at'].apply(format_date_th)
 
-    # --- ซ่อน id ในหน้า editor ---
     edited_df = st.data_editor(
         df_for_edit, 
         use_container_width=True, 
@@ -97,15 +103,13 @@ else:
     )
     
     col_b1, col_b2 = st.columns([1, 5])
-    if col_b1.button("💾 บันทึก"):
+    if col_b1.button("💾 บันทึกการประเมิน"):
         try:
             save_df = edited_df.copy()
             if 'created_at' in save_df.columns:
                 save_df['created_at'] = save_df['created_at'].apply(th_to_iso)
             
-            # ดึง ID กลับมาเพื่อให้ลบ/อัปเดตถูกแถว (แต่ไม่แสดงในหน้าจอ)
             save_df['id'] = df['id'] 
-            
             original_ids = df['id'].tolist()
             current_ids = save_df['id'].dropna().tolist()
             for del_id in [i for i in original_ids if i not in current_ids]:
