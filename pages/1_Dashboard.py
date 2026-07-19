@@ -5,6 +5,38 @@ from supabase import create_client
 
 # 1. ตั้งค่าหน้าจอ
 st.set_page_config(layout="wide", page_title="iKid Secure | Dashboard")
+st.markdown("""
+    <style>
+    /* 1. คำสั่งซ่อน Sidebar */
+    [data-testid="stSidebar"] {
+        display: none !important;
+    }
+
+    /* 2. ตั้งค่าสีพื้นหลังและสีตัวอักษรของหน้าแอป */
+    .stApp { 
+        background-color: #F8F9FA !important; 
+    }
+    h1, h2, h3, p, div, label { 
+        color: #212529 !important; 
+    }
+
+    /* 3. แต่งปุ่มให้สวย (สีน้ำเงินเข้มขอบโค้ง) */
+    div.stButton > button { 
+        background-color: #0D6EFD !important; 
+        color: #FFFFFF !important; 
+        border-radius: 8px !important;
+        border: none !important;
+        padding: 10px 24px !important;
+    }
+    
+    /* 4. แต่งส่วนที่เป็นตาราง (เอาไว้แต่งสีตารางที่โชว์) */
+    .stDataFrame {
+        border: 1px solid #dee2e6 !important;
+        border-radius: 8px !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 
 # 2. เช็กสิทธิ์
 if "authenticated" not in st.session_state or not st.session_state.get("authenticated"):
