@@ -16,24 +16,16 @@ supabase = init_supabase()
 
 patient_id = st.session_state.get("target_patient_id")
 
-# Header สวยๆ พร้อมไอคอน
-st.markdown("""
-    <style>
-    .big-font { font-size:24px !important; font-weight:bold; color: #6D4C41; }
-    </style>
-    """, unsafe_allow_html=True)
-
 st.title("📋 แบบประเมินพฤติกรรมก้าวร้าวรุนแรง (OAS)")
 st.markdown("---")
 
-# ข้อมูลแบบประเมิน
 options = {
     "1. พฤติกรรมก้าวร้าวรุนแรงต่อตนเอง": 
-    {0: "ไม่มีพฤติกรรมก้าวร้าวต่อตนเอง", 1: "ระดับ 1: ขีดข่วนผิวหนัง ตนเอง", 2: "ระดับ 2: ดึงผม โขกศีรษะตนเอง เป็นรอยขนาดเล็ก", 3: "ระดับ 3: ทำร้ายตนเองรุนแรง เช่น มีรอยช้ำ รอยกรีดลึก เลือดออก มีการบาดเจ็บอวัยวะภายใน หรือหมดสติ"},
+    {0: "ไม่มีพฤติกรรมก้าวร้าวต่อตนเอง", 1: "ระดับ 1: ขีดข่วนผิวหนัง ตนเอง", 2: "ระดับ 2: ดึงผม โขกศีรษะตนเอง เป็นรอยขนาดเล็ก", 3: "ระดับ 3: ทำร้ายตนเองรุนแรง"},
     "2. พฤติกรรมก้าวร้าวรุนแรงต่อผู้อื่นทางคำพูดและการแสดงออก": 
-    {0: "ไม่มีพฤติกรรมก้าวร้าวต่อผู้อื่น", 1: "ระดับ 1: หงุดหงิดส่งเสียงดัง ตะโกนด้วยความโกรธ หรือตะโกนด่าผู้อื่นด้วยถ้อยคำไม่รุนแรง", 2: "ระดับ 2: ด่าคำหยาบคาย แสดงท่าทางคุกคาม เช่น ถลกเสื้อผ้า ทำท่าต่อยลม หรือกระชากคอเสื้อผู้อื่น พุ่งชน เตะ ผลัก หรือดึงผมผู้อื่นแต่ไม่ได้รับบาดเจ็บ", 3: "ระดับ 3: พูดข่มขู่จะทำร้ายผู้อื่นชัดเจน เช่น 'ฉันจะฆ่าแก' หรือทำร้ายผู้อื่นจนได้รับบาดเจ็บ เช่น ช้ำ เคล็ด บวม เกิดบาดแผล กระดูกหัก หรือเกิดการบาดเจ็บของอวัยวะภายใน หรือหมดสติ"},
+    {0: "ไม่มีพฤติกรรมก้าวร้าวต่อผู้อื่น", 1: "ระดับ 1: หงุดหงิดส่งเสียงดัง", 2: "ระดับ 2: ด่าคำหยาบคาย แสดงท่าทางคุกคาม", 3: "ระดับ 3: ทำร้ายผู้อื่นชัดเจน"},
     "3. พฤติกรรมก้าวร้าวต่อทรัพย์สิน": 
-    {0: "ไม่มีพฤติกรรมก้าวร้าวต่อทรัพย์สิน", 1: "ระดับ 1: ปิดประตูเสียงดัง รื้อข้าวของกระจัดกระจาย", 2: "ระดับ 2: ขว้าง เตะ ทุบวัตถุ หรือสิ่งของ", 3: "ระดับ 3: ทำสิ่งของแตกหักกระจัดกระจาย เช่น ทุบกระจก ขว้างแก้ว จาน มีด หรือสิ่งของที่เป็นอันตราย หรือจุดไฟเผา"}
+    {0: "ไม่มีพฤติกรรมก้าวร้าวต่อทรัพย์สิน", 1: "ระดับ 1: ปิดประตูเสียงดัง รื้อข้าวของ", 2: "ระดับ 2: ขว้าง เตะ ทุบวัตถุ", 3: "ระดับ 3: ทำสิ่งของแตกหักกระจัดกระจาย"}
 }
 
 results = {}
@@ -44,35 +36,45 @@ for category, items in options.items():
 
 st.divider()
 
-# ปุ่มบันทึกแบบเด่นๆ
 if st.button("💾 บันทึกและดูผลการประเมิน", use_container_width=True, type="primary"):
-    # 1. คำนวณคะแนน
+    # 1. คำนวณคะแนน และสรุปพฤติกรรม
     max_score = 0
+    active_behaviors = []
+    
     for category, items in options.items():
         chosen_label = results[category]
-        for score, label in items.items():
-            if chosen_label == label:
-                if score > max_score: max_score = score
+        # หาคะแนนจาก label ที่เลือก
+        score = next(s for s, l in items.items() if l == chosen_label)
+        
+        if score > max_score: 
+            max_score = score
+        
+        # สรุปประเภทพฤติกรรม (ถ้าคะแนน > 0)
+        if score > 0:
+            if "ตนเอง" in category: active_behaviors.append("รุนแรงต่อตัวเอง")
+            elif "ผู้อื่น" in category: active_behaviors.append("รุนแรงต่อผู้อื่น")
+            elif "ทรัพย์สิน" in category: active_behaviors.append("รุนแรงต่อสิ่งของ")
+
+    # สรุปข้อความ
+    behavior_summary = " และ ".join(active_behaviors) if active_behaviors else "ไม่มีพฤติกรรมรุนแรง"
     
     # 2. เตรียมข้อมูลบันทึก
     new_record = {
         "patient_id": patient_id,
         "created_at": datetime.now().strftime('%Y-%m-%d'),
         "incident_count": max_score,
-        "aggression_level": max_score, # บันทึกเป็นตัวเลข
-        "behavior_note": results["2. พฤติกรรมก้าวร้าวรุนแรงต่อผู้อื่นทางคำพูดและการแสดงออก"]
+        "aggression_level": max_score,
+        "behavior_note": behavior_summary
     }
     
     try:
         # บันทึกประวัติ
         supabase.table("assessments").insert(new_record).execute()
         
-        # อัปเดตตาราง patients (ส่งเป็นตัวเลข)
+        # อัปเดตตาราง patients
         supabase.table("patients").update({"aggression_level": max_score}).eq("id", patient_id).execute()
         
-        # ส่งค่าไปหน้า Result
         st.session_state["evaluation_score"] = max_score
-        st.session_state["evaluation_details"] = results
         
         with st.spinner('กำลังบันทึกข้อมูล...'):
             st.success("✅ บันทึกข้อมูลเรียบร้อย!")
