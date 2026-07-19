@@ -62,7 +62,7 @@ try:
         df_filtered["level_str"] = df_filtered["aggression_level"].astype(int).astype(str)
 
         if df_filtered.empty:
-            st.info("ยังไม่มีข้อมูลการประเมินระดับ 1-3 ในระบบเจ้า ✨")
+            st.info("ยังไม่มีข้อมูลการประเมินระดับ 1-3 ในระบบ ✨")
         else:
             # --- ส่วนแสดง KPI ---
             total_cases = int(len(df_filtered))
