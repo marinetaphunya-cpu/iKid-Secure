@@ -73,9 +73,13 @@ if not st.session_state.edit_mode:
         st.session_state.edit_mode = True
         st.rerun()
 else:
-    # โหมดแก้ไข: ใช้ column_config เพื่อแสดงผลวันที่แบบไทยและมีปฏิทินให้เลือก
+    # โหมดแก้ไข: แปลงเป็น datetime ก่อนเข้า editor เพื่อป้องกัน error
+    df_for_edit = df.copy()
+    if 'created_at' in df_for_edit.columns:
+        df_for_edit['created_at'] = pd.to_datetime(df_for_edit['created_at'])
+
     edited_df = st.data_editor(
-        df, 
+        df_for_edit, 
         use_container_width=True, 
         num_rows="dynamic",
         column_config={
@@ -92,14 +96,19 @@ else:
     col_b1, col_b2 = st.columns([1, 5])
     if col_b1.button("💾 บันทึก"):
         try:
+            # แปลงวันที่กลับเป็น String format YYYY-MM-DD สำหรับ Supabase
+            save_df = edited_df.copy()
+            if 'created_at' in save_df.columns:
+                save_df['created_at'] = save_df['created_at'].dt.strftime('%Y-%m-%d')
+
             original_ids = df['id'].tolist()
-            current_ids = edited_df['id'].dropna().tolist()
+            current_ids = save_df['id'].dropna().tolist()
             ids_to_delete = [i for i in original_ids if i not in current_ids]
             
             for del_id in ids_to_delete:
                 supabase.table("assessments").delete().eq("id", del_id).execute()
 
-            records = edited_df.to_dict(orient='records')
+            records = save_df.to_dict(orient='records')
             for r in records:
                 r['patient_id'] = patient_id
                 if 'id' in r and pd.isna(r['id']): del r['id']
@@ -122,7 +131,6 @@ else:
 st.divider()
 if st.button("🚀 ไปหน้าประเมิน", use_container_width=True):
     st.switch_page("pages/3_Evaluation.py")
-
 
 
 
