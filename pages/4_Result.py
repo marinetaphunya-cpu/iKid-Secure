@@ -1,9 +1,6 @@
 import streamlit as st
 
 st.set_page_config(layout="wide", page_title="Result | iKid Secure")
-if "authenticated" not in st.session_state or not st.session_state.get("authenticated"):
-    st.warning("กรุณาเข้าสู่ระบบก่อน! 🐈‍⬛")
-    st.switch_page("app.py")
 st.markdown("""
     <style>
     /* 1. คำสั่งซ่อน Sidebar */
@@ -36,7 +33,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
     
-
+if "authenticated" not in st.session_state or not st.session_state.get("authenticated"):
+    st.warning("กรุณาเข้าสู่ระบบก่อน! 🐈‍⬛")
+    st.switch_page("app.py")
 # ดึงข้อมูล
 score = st.session_state.get("evaluation_score", 0)
 
