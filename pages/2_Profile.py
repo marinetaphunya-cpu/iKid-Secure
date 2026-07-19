@@ -92,7 +92,7 @@ else:
                     supabase.table("assessments").insert(r).execute()
             
             st.session_state.edit_mode = False
-            st.success("✅ บันทึกและอัปเดตเรียบร้อยเจ้า!")
+            st.success("✅ บันทึกและอัปเดตเรียบร้อยแล้ว!")
             st.rerun()
         except Exception as e:
             st.error(f"❌ บันทึกพลาด: {e}")
