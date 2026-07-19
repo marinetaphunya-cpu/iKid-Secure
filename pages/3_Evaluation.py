@@ -3,9 +3,6 @@ from datetime import datetime
 from supabase import create_client
 
 st.set_page_config(layout="wide", page_title="Evaluation | iKid Secure")
-if "authenticated" not in st.session_state or not st.session_state.get("authenticated"):
-    st.warning("กรุณาเข้าสู่ระบบก่อน! 🐈‍⬛")
-    st.switch_page("app.py")
  st.markdown("""
     <style>
     /* 1. คำสั่งซ่อน Sidebar */
@@ -38,7 +35,9 @@ if "authenticated" not in st.session_state or not st.session_state.get("authenti
     </style>
 """, unsafe_allow_html=True)
    
-
+if "authenticated" not in st.session_state or not st.session_state.get("authenticated"):
+    st.warning("กรุณาเข้าสู่ระบบก่อน! 🐈‍⬛")
+    st.switch_page("app.py")
 # เชื่อมต่อฐานข้อมูล
 @st.cache_resource
 def init_supabase():
