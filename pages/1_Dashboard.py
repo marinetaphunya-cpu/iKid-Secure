@@ -23,7 +23,7 @@ def get_data_from_db():
         response = supabase.table("patients").select("*").execute()
         return pd.DataFrame(response.data)
     except Exception as e:
-        st.error(f"ดึงข้อมูลไม่ได้เจ้า: {e}")
+        st.error(f"ดึงข้อมูลไม่ได้: {e}")
         return pd.DataFrame()
 
 df = get_data_from_db()
@@ -31,7 +31,7 @@ df = get_data_from_db()
 # หัวข้อพร้อมปุ่มทางลัดดูสถิติ
 c1, c2 = st.columns([4, 1])
 with c1:
-    st.title("🩺 ระบบจัดการข้อมูลผู้ป่วย iKid Secure 💜")
+    st.title("🩺 ระบบจัดการข้อมูล iKid Secure 💜")
 with c2:
     st.write("") # เว้นระยะให้ปุ่มตรงกับหัวข้อ
     st.write("")
@@ -44,28 +44,28 @@ st.markdown("---")
 # ส่วนเลือกผู้ป่วย
 col1, col2 = st.columns([1, 1])
 with col1:
-    st.subheader("🔍 ค้นหาประวัติผู้ป่วย")
+    st.subheader("🔍 ค้นหาประวัติ")
     if not df.empty:
-        patient_names = ["-- โปรดเลือกชื่อผู้ป่วย --"] + df["name"].tolist()
-        selected_name = st.selectbox("พิมพ์ค้นหาชื่อผู้ป่วย", patient_names)
+        patient_names = ["-- โปรดเลือกชื่อ --"] + df["name"].tolist()
+        selected_name = st.selectbox("พิมพ์ค้นหาชื่อ", patient_names)
         
-        if selected_name != "-- โปรดเลือกชื่อผู้ป่วย --":
+        if selected_name != "-- โปรดเลือกชื่อ --":
             if st.button(f"🚀 ไปยังหน้าประวัติของ: {selected_name}"):
                 patient_row = df[df["name"] == selected_name]
                 p_id = str(patient_row["id"].iloc[0])
                 st.session_state["target_patient_id"] = p_id
                 st.switch_page("pages/2_Profile.py")
     else:
-        st.info("ไม่พบข้อมูลคนไข้ในระบบเจ้า ✨")
+        st.info("ไม่พบข้อมูลในระบบ ✨")
 
 # ส่วนแสดงภาพสรุป
 with col2:
-    st.success(f"จำนวนผู้ป่วยในความดูแลทั้งหมด: **{len(df)} คน** 🧸")
+    st.success(f"จำนวนผู้ที่อยู่ในความดูแลทั้งหมด: **{len(df)} คน** 🧸")
 
 st.divider()
 
 # 5. โหมดแก้ไขข้อมูลผู้ป่วย
-st.subheader("✍️ ฐานข้อมูลผู้ป่วย (แก้ไข/เพิ่มรายชื่อ)")
+st.subheader("✍️ รายการข้อมูล (แก้ไข/เพิ่มรายชื่อ)")
 if st.session_state.get('edit_mode', False):
     with st.container(border=True):
         st.info("💡 กรอกข้อมูลในช่องด้านล่าง แล้วกดบันทึกเพื่ออัปเดตระบบ")
@@ -81,11 +81,11 @@ if st.session_state.get('edit_mode', False):
             try:
                 df_clean = new_df.replace({np.nan: None})
                 supabase.table("patients").upsert(df_clean.to_dict(orient='records')).execute()
-                st.success("บันทึกข้อมูลเรียบร้อย! ระบบอัปเดตแล้วเจ้า ✨")
+                st.success("บันทึกข้อมูลเรียบร้อย! ระบบอัปเดตแล้ว ✨")
                 st.session_state.edit_mode = False
                 st.rerun()
             except Exception as e:
-                st.error(f"บันทึกพลาดเจ้า: {e}")
+                st.error(f"บันทึกพลาด: {e}")
         if c_cancel.button("❌ ยกเลิก"):
             st.session_state.edit_mode = False
             st.rerun()
@@ -97,7 +97,7 @@ else:
         use_container_width=True,
         hide_index=True
     )
-    if st.button("✏️ เข้าโหมดแก้ไขรายชื่อ"):
+    if st.button("✏️ แก้ไขรายชื่อ"):
         st.session_state.edit_mode = True
         st.rerun()
 
