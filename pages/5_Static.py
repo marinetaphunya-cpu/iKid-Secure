@@ -5,6 +5,9 @@ from supabase import create_client
 
 # 1. ตั้งค่าหน้าเพจ
 st.set_page_config(layout="wide", page_title="iKid Secure | Statistics")
+if "authenticated" not in st.session_state or not st.session_state.get("authenticated"):
+    st.warning("กรุณาเข้าสู่ระบบก่อน! 🐈‍⬛")
+    st.switch_page("app.py")
 
 # 2. เชื่อมต่อ Supabase
 @st.cache_resource
