@@ -24,7 +24,7 @@ def login_page():
     password = st.text_input("โปรดกรอกรหัสผ่านเพื่อเข้าใช้งาน", type="password")
     
     if st.button("เข้าสู่ระบบ"):
-        if password == "1234": # เช็ครหัสที่นี่
+        if password == "Ikid@59": # เช็ครหัสที่นี่
             st.session_state["authenticated"] = True
             st.rerun() # สั่งรันใหม่เพื่อเช็คสิทธิ์อีกรอบ
         else:
