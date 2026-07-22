@@ -153,6 +153,15 @@ if st.session_state.get("edit_mode", False):
                     # ให้ตัดคีย์ id ออกเลย เพื่อให้ Postgres สร้างให้อัตโนมัติ
                     if r.get("id") is None:
                         r.pop("id", None)
+
+                    # ด่านสุดท้าย: กวาดล้าง NaN ที่หลงเหลือในทุกคอลัมน์ (รวมคอลัมน์ที่ถูกซ่อน
+                    # ด้วย column_order เช่น history_note) ให้เป็น None ทั้งหมด เพราะแถวใหม่ที่
+                    # เพิ่มผ่าน data_editor ทุกช่องที่ไม่ได้กรอกจะเป็น float('nan') จริงๆ
+                    # ไม่ว่าคอลัมน์นั้นจะเป็นข้อความหรือตัวเลขก็ตาม
+                    for k, v in list(r.items()):
+                        if isinstance(v, float) and np.isnan(v):
+                            r[k] = None
+
                     records.append(r)
 
                 supabase.table("patients").upsert(records).execute()
@@ -176,6 +185,7 @@ else:
     if st.button("✏️ แก้ไขรายชื่อ", key="edit_patients_toggle"):
         st.session_state.edit_mode = True
         st.rerun()
+
 
 
 
