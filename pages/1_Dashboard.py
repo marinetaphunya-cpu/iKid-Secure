@@ -83,6 +83,7 @@ df = get_data_from_db()
 c1, c2 = st.columns([4, 1])
 with c1:
     st.title("🩺 ระบบจัดการข้อมูล iKid Secure 💜")
+    st.caption("build: dashboard-int-fix-v3")
 with c2:
     st.write("")  # เว้นระยะให้ปุ่มตรงกับหัวข้อ
     st.write("")
