@@ -185,7 +185,3 @@ else:
     if st.button("✏️ แก้ไขรายชื่อ", key="edit_patients_toggle"):
         st.session_state.edit_mode = True
         st.rerun()
-
-
-
-
