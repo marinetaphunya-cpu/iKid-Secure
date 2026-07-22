@@ -131,17 +131,29 @@ if st.session_state.get("edit_mode", False):
         c_save, c_cancel = st.columns(2)
         if c_save.button("💾 บันทึกการเปลี่ยนแปลง", key="save_patients_btn"):
             try:
-                df_clean = new_df.replace({np.nan: None})
+                # สำคัญ: ต้อง astype(object) ก่อน แล้วค่อย .where(...) แทน .replace(np.nan, None)
+                # เพราะถ้าคอลัมน์ยังเป็น float64 อยู่ pandas จะแอบแปลง None
+                # กลับเป็น NaN ให้เองเงียบๆ เพื่อรักษา dtype (ทำให้ id/aggression_level
+                # ที่ว่างอยู่กลายเป็น NaN จริงๆ แล้วส่งเป็น JSON ไม่ได้ -> error "nan")
+                df_clean = new_df.astype(object)
+                df_clean = df_clean.where(pd.notnull(df_clean), None)
 
                 # แปลงคอลัมน์ตัวเลขให้เป็น int/None จริงๆ ก่อนส่งขึ้น Supabase
                 # (ป้องกัน error "invalid input syntax for type integer: '1.0'")
-                if "aggression_level" in df_clean.columns:
-                    df_clean["aggression_level"] = df_clean["aggression_level"].apply(to_int_or_none)
+                for int_col in ("id", "aggression_level"):
+                    if int_col in df_clean.columns:
+                        df_clean[int_col] = df_clean[int_col].apply(to_int_or_none)
 
-                records = df_clean.to_dict(orient="records")
-
-                # ตัดแถวว่างที่ผู้ใช้เพิ่มมาเฉยๆ แต่ยังไม่กรอกชื่อ (กันแถว None ล้วนๆ ถูกส่งขึ้นไป)
-                records = [r for r in records if r.get("name")]
+                records = []
+                for r in df_clean.to_dict(orient="records"):
+                    # ตัดแถวว่างที่ผู้ใช้เพิ่มมาเฉยๆ แต่ยังไม่กรอกชื่อ
+                    if not r.get("name"):
+                        continue
+                    # id เป็น primary key ห้ามส่ง null ขึ้นไป ถ้าแถวใหม่ยังไม่มี id
+                    # ให้ตัดคีย์ id ออกเลย เพื่อให้ Postgres สร้างให้อัตโนมัติ
+                    if r.get("id") is None:
+                        r.pop("id", None)
+                    records.append(r)
 
                 supabase.table("patients").upsert(records).execute()
                 st.success("บันทึกข้อมูลเรียบร้อย! ระบบอัปเดตแล้ว ✨")
