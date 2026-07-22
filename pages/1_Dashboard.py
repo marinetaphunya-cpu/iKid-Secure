@@ -83,7 +83,7 @@ df = get_data_from_db()
 c1, c2 = st.columns([4, 1])
 with c1:
     st.title("🩺 ระบบจัดการข้อมูล iKid Secure 💜")
-    st.caption("build: dashboard-int-fix-v3")
+    st.caption("build: dashboard-int-fix-v4")
 with c2:
     st.write("")  # เว้นระยะให้ปุ่มตรงกับหัวข้อ
     st.write("")
@@ -143,17 +143,24 @@ if st.session_state.get("edit_mode", False):
                 df_clean = new_df.astype(object)
                 df_clean = df_clean.where(pd.notnull(df_clean), None)
 
-                # แปลงคอลัมน์ตัวเลขให้เป็น int/None จริงๆ ก่อนส่งขึ้น Supabase
-                # (ป้องกัน error "invalid input syntax for type integer: '1.0'")
-                for int_col in ("id", "aggression_level"):
-                    if int_col in df_clean.columns:
-                        df_clean[int_col] = df_clean[int_col].apply(to_int_or_none)
-
                 records = []
                 for r in df_clean.to_dict(orient="records"):
                     # ตัดแถวว่างที่ผู้ใช้เพิ่มมาเฉยๆ แต่ยังไม่กรอกชื่อ
                     if not r.get("name"):
                         continue
+
+                    # แปลงคอลัมน์ตัวเลขให้เป็น int/None จริงๆ ก่อนส่งขึ้น Supabase
+                    # (ป้องกัน error "invalid input syntax for type integer: '1.0'")
+                    # *** สำคัญ: ต้องแปลงตรงนี้ที่ระดับ dict ธรรมดา ห้ามแปลงผ่าน
+                    # pandas Series/.apply() แล้วเซ็ตกลับเข้า DataFrame เด็ดขาด เพราะถ้าผลลัพธ์
+                    # มีทั้ง int ปนกับ None ในคอลัมน์เดียวกัน pandas จะคำนวณ dtype ของ Series
+                    # ใหม่ให้อัตโนมัติเป็น float64 (เพื่อรองรับ None) แล้วแอบแปลง int กลับเป็น
+                    # float ให้ทั้งคอลัมน์อีกรอบ (1 -> 1.0) ซึ่งเป็นบั๊กเดิมที่เจอไปแล้ว
+                    # แค่โผล่มาในจุดใหม่ที่ไม่ทันระวัง
+                    for int_col in ("id", "aggression_level"):
+                        if int_col in r:
+                            r[int_col] = to_int_or_none(r[int_col])
+
                     # id เป็น primary key ห้ามส่ง null ขึ้นไป ถ้าแถวใหม่ยังไม่มี id
                     # ให้ตัดคีย์ id ออกเลย เพื่อให้ Postgres สร้างให้อัตโนมัติ
                     if r.get("id") is None:
@@ -173,11 +180,22 @@ if st.session_state.get("edit_mode", False):
                 # แล้วสั่งลบออกจาก Supabase ด้วย ไม่งั้นแถวที่ลบในหน้าจอจะไม่หายจาก DB จริง
                 remaining_ids = {r["id"] for r in records if r.get("id") is not None}
                 deleted_ids = original_ids - remaining_ids
+                delete_errors = []
                 for del_id in deleted_ids:
-                    supabase.table("patients").delete().eq("id", del_id).execute()
+                    try:
+                        supabase.table("patients").delete().eq("id", del_id).execute()
+                    except Exception as del_err:
+                        delete_errors.append(f"ลบ id {del_id} ไม่สำเร็จ: {del_err}")
 
                 if records:
                     supabase.table("patients").upsert(records).execute()
+
+                if delete_errors:
+                    for msg in delete_errors:
+                        st.warning(
+                            f"⚠️ {msg} — อาจเป็นเพราะผู้ป่วยรายนี้มีประวัติการประเมินผูกอยู่ในตาราง "
+                            "assessments ต้องลบประวัติที่เกี่ยวข้องก่อน"
+                        )
                 st.success("บันทึกข้อมูลเรียบร้อย! ระบบอัปเดตแล้ว ✨")
                 st.session_state.edit_mode = False
                 st.rerun()
@@ -205,3 +223,4 @@ else:
     if st.button("✏️ แก้ไขรายชื่อ", key="edit_patients_toggle"):
         st.session_state.edit_mode = True
         st.rerun()
+
